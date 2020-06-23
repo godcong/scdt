@@ -88,12 +88,10 @@ func (c *connImpl) send() {
 			}
 
 		case q := <-c.sendQueue:
-			if q.NeedCallback() {
-				c.RegisterCallback(q)
-			}
-			err := q.Exchange().Pack(n.conn)
+			c.addCallback(q)
+			err = c.SendMessage(q.message)
 			if err != nil {
-				panic(err)
+				return
 			}
 		}
 	}
@@ -109,7 +107,7 @@ func (c *connImpl) newSession() Session {
 	return (Session)(s)
 }
 
-func (c *connImpl) RegisterCallback(queue *Queue) {
+func (c *connImpl) addCallback(queue *Queue) {
 	if !queue.NeedCallback() {
 		return
 	}
@@ -130,10 +128,8 @@ func (c *connImpl) Close() {
 
 // ScanExchange ...
 func ScanExchange(scanner *bufio.Scanner, packer ReadPacker) error {
-
 	r := bytes.NewReader(scanner.Bytes())
 	return packer.Unpack(r)
-
 }
 
 func dataScan(conn net.Conn) *bufio.Scanner {
