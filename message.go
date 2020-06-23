@@ -21,7 +21,8 @@ const (
 )
 
 const (
-	MessageHeartBeat MessageID = 0x01
+	MessageHeartBeat    MessageID = 0x01
+	MessageDataTransfer MessageID = 0x02
 )
 
 type Message struct {
