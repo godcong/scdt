@@ -5,31 +5,54 @@ import (
 	"io"
 )
 
-type RequestType uint32    //4
-type MessageProcess uint32 //4
-type RequestStatus uint32  //4
-type ProcessSession uint32 //4
-type DataLength uint64     //8
-type SumLength uint16      //2
-type Extension uint16      //2
+type RequestType uint16   //2
+type MessageID uint16     //2
+type RequestStatus uint32 //4
+type Session uint32       //4
+type DataLength uint64    //8
+type SumLength uint16     //2
+type Extension uint16     //2
+
 // Version //4
+const (
+	RequestTypeRecv   RequestType = 0x00
+	RequestTypeSend   RequestType = 0x01
+	RequestTypeFailed RequestType = 0x02
+)
+
+const (
+	MessageHeartBeat MessageID = 0x01
+)
 
 type Message struct {
-	Version    Version
-	SumLength  SumLength
-	DataLength DataLength
-	Session    ProcessSession
-	Type       RequestType
-	Process    MessageProcess
-	Status     RequestStatus
-	Extension  Extension
-	CheckSum   []byte
-	Data       []byte
+	version     Version
+	requestType RequestType
+	MessageID   MessageID
+	DataLength  DataLength
+	Session     Session
+	Data        []byte
+}
+
+func NewSendMessage(id MessageID, data []byte) *Message {
+	return &Message{
+		version:     Version{'v', 0, 0, 1},
+		requestType: RequestTypeSend,
+		MessageID:   id,
+		DataLength:  DataLength(len(data)),
+		Data:        data,
+	}
+}
+func NewRecvMessage(id MessageID) *Message {
+	return &Message{
+		version:     Version{'v', 0, 0, 1},
+		requestType: RequestTypeRecv,
+		MessageID:   id,
+	}
 }
 
 func (m *Message) Unpack(reader io.Reader) (err error) {
 	var v []interface{}
-	v = append(v, &m.Version, &m.DataLength, &m.SumLength, &m.Session, &m.Type, &m.Process, &m.Status, &m.Extension)
+	v = append(v, &m.version, &m.requestType, &m.MessageID, &m.DataLength)
 	for i := range v {
 		err = binary.Read(reader, binary.BigEndian, v[i])
 		if err != nil {
@@ -42,18 +65,13 @@ func (m *Message) Unpack(reader io.Reader) (err error) {
 		return binary.Read(reader, binary.BigEndian, &m.Data)
 	}
 
-	if m.SumLength != 0 {
-		m.CheckSum = make([]byte, m.SumLength)
-		return binary.Read(reader, binary.BigEndian, &m.CheckSum)
-	}
-
 	return nil
 }
 
 // Pack ...
 func (m Message) Pack(writer io.Writer) (err error) {
 	var v []interface{}
-	v = append(v, &m.Version, &m.DataLength, &m.SumLength, &m.Session, &m.Type, &m.Process, &m.Status, &m.Extension, &m.CheckSum, &m.Data)
+	v = append(v, &m.version, &m.requestType, &m.MessageID, &m.DataLength, &m.Data)
 	for i := range v {
 		err = binary.Write(writer, binary.BigEndian, v[i])
 		if err != nil {

@@ -7,14 +7,23 @@ import (
 	"encoding/binary"
 	"net"
 	"time"
+
+	"go.uber.org/atomic"
 )
 
 type connImpl struct {
-	ctx     context.Context
-	cancel  context.CancelFunc
-	cfg     *Config
-	conn    net.Conn
-	hbCheck *time.Timer
+	ctx       context.Context
+	cancel    context.CancelFunc
+	cfg       *Config
+	conn      net.Conn
+	hbCheck   *time.Timer
+	session   *atomic.Uint32
+	msgCB     func(msg *Message)
+	sendQueue chan *Queue
+}
+
+func (c *connImpl) Send(message *Message) error {
+	panic("implement me")
 }
 
 func (c *connImpl) SendMessage(message *Message) error {
@@ -28,10 +37,11 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 	}
 	ctx, cancel := context.WithCancel(context.TODO())
 	impl := &connImpl{
-		ctx:    ctx,
-		cancel: cancel,
-		cfg:    cfg,
-		conn:   conn,
+		ctx:     ctx,
+		cancel:  cancel,
+		cfg:     cfg,
+		conn:    conn,
+		session: atomic.NewUint32(1),
 	}
 	return runConnection(impl)
 }
@@ -55,7 +65,45 @@ func (c *connImpl) recv() {
 }
 
 func (c *connImpl) send() {
+	var err error
+	defer func() {
+		if err != nil {
+			c.Close()
+		}
+	}()
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-c.hbCheck.C:
+			err = c.SendMessage(NewSendMessage(MessageHeartBeat, nil))
+			if err != nil {
+				return
+			}
+			if c.cfg.Timeout > 0 {
+				c.hbCheck.Reset(c.cfg.Timeout)
+			}
 
+		case q := <-c.sendQueue:
+			if q.HasCallback() {
+				n.RegisterCallback(q)
+			}
+			err := q.Exchange().Pack(n.conn)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+func (c *connImpl) Close() {
+	if c.cancel != nil {
+		c.cancel()
+		c.cancel = nil
+	}
+	if c.conn != nil {
+		c.conn.Close()
+	}
 }
 
 // ScanExchange ...
