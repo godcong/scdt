@@ -43,6 +43,7 @@ func NewSendMessage(id MessageID, data []byte) *Message {
 		Data:        data,
 	}
 }
+
 func NewRecvMessage(id MessageID) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},

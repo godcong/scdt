@@ -25,14 +25,6 @@ type connImpl struct {
 	sendQueue     chan *Queue
 }
 
-func (c *connImpl) Send(message *Message) error {
-	panic("implement me")
-}
-
-func (c *connImpl) SendMessage(message *Message) error {
-	panic("implement me")
-}
-
 func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 	cfg := defaultConfig()
 	for _, cf := range cfs {
@@ -59,12 +51,32 @@ func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
 	return NewConn(conn, cfs...)
 }
 
+func (c *connImpl) SendMessage(pack WritePacker) error {
+	return pack.Pack(c.conn)
+}
+
 func (c *connImpl) run() {
 
 }
 
 func (c *connImpl) recv() {
-
+	scan := dataScan(c.conn)
+	for scan.Scan() {
+		select {
+		case <-c.ctx.Done():
+			return
+		default:
+			var msg Message
+			err := ScanExchange(scan, &msg)
+			if err != nil {
+				panic(err)
+			}
+			go c.doRecv(&msg)
+		}
+	}
+	if scan.Err() != nil {
+		panic(scan.Err())
+	}
 }
 
 func (c *connImpl) send() {
@@ -124,6 +136,67 @@ func (c *connImpl) Close() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
+}
+
+func (c *connImpl) doRecv(msg *Message) {
+	switch msg.requestType {
+	case RequestTypeRecv:
+		c.recvRequest(msg)
+	case RequestTypeSend:
+		c.recvResponse(msg)
+	default:
+		c.Close()
+		return
+	}
+}
+
+var recvReqFunc = map[MessageID]func(v interface{}) (msg *Message, err error){
+	MessageDataTransfer: recvRequestDataTransfer,
+	MessageHeartBeat:    recvRequestHearBeat,
+}
+
+func recvRequestDataTransfer(v interface{}) (msg *Message, err error) {
+	msg = NewRecvMessage(MessageDataTransfer)
+	return
+}
+
+func recvRequestHearBeat(v interface{}) (msg *Message, err error) {
+	msg = NewRecvMessage(MessageHeartBeat)
+	return
+}
+
+func (c *connImpl) recvRequest(msg *Message) {
+	f, b := recvReqFunc[msg.MessageID]
+	if !b {
+		return
+	}
+	//ignore error
+	newMsg, _ := f(nil)
+	newMsg.Session = msg.Session
+	DefaultQueue(newMsg).Send(c.sendQueue)
+}
+
+func (c *connImpl) recvResponse(msg *Message) {
+	if msg.MessageID == MessageHeartBeat {
+		c.hbCheck.Reset(c.cfg.Timeout)
+		return
+	}
+	trigger, b := c.GetCallback(msg.Session)
+	if b {
+		trigger(msg)
+	}
+}
+
+func (c *connImpl) GetCallback(session Session) (f func(message *Message), b bool) {
+	if session == 0 {
+		return
+	}
+	load, ok := c.callbackStore.Load(session)
+	if ok {
+		f, b = load.(func(message *Message))
+		c.callbackStore.Delete(session)
+	}
+	return
 }
 
 // ScanExchange ...
