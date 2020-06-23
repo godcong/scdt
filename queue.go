@@ -8,15 +8,18 @@ type Queue struct {
 	callback chan *Message
 	timer    *time.Timer
 	timeout  time.Duration
-	session  Session
+	session  *Session //link msg.session => session
 }
 
 func (q *Queue) Session() Session {
-	return q.session
+	return q.message.Session
 }
 
 func (q *Queue) SetSession(session Session) {
-	q.session = session
+	if session == 0 || q.session == nil {
+		return
+	}
+	*q.session = session
 }
 
 func (q *Queue) NeedCallback() bool {
@@ -88,6 +91,7 @@ func CallbackQueue(msg *Message) *Queue {
 	return &Queue{
 		timer:    time.NewTimer(0),
 		callback: make(chan *Message),
+		session:  &msg.Session,
 		message:  msg,
 	}
 }
