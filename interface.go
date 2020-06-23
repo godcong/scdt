@@ -3,7 +3,6 @@ package scdt
 import "io"
 
 type Connection interface {
-	Send(message *Message) error
 }
 
 type SendCallback func(packer ReadPacker)
