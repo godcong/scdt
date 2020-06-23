@@ -5,21 +5,24 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"math"
 	"net"
+	"sync"
 	"time"
 
 	"go.uber.org/atomic"
 )
 
 type connImpl struct {
-	ctx       context.Context
-	cancel    context.CancelFunc
-	cfg       *Config
-	conn      net.Conn
-	hbCheck   *time.Timer
-	session   *atomic.Uint32
-	msgCB     func(msg *Message)
-	sendQueue chan *Queue
+	ctx           context.Context
+	cancel        context.CancelFunc
+	cfg           *Config
+	conn          net.Conn
+	hbCheck       *time.Timer
+	session       *atomic.Uint32
+	callbackStore *sync.Map
+	msgCB         func(msg *Message)
+	sendQueue     chan *Queue
 }
 
 func (c *connImpl) Send(message *Message) error {
@@ -85,8 +88,8 @@ func (c *connImpl) send() {
 			}
 
 		case q := <-c.sendQueue:
-			if q.HasCallback() {
-				n.RegisterCallback(q)
+			if q.NeedCallback() {
+				c.RegisterCallback(q)
 			}
 			err := q.Exchange().Pack(n.conn)
 			if err != nil {
@@ -94,6 +97,25 @@ func (c *connImpl) send() {
 			}
 		}
 	}
+}
+
+func (c *connImpl) newSession() Session {
+	s := c.session.Load()
+	if s != math.MaxUint32 {
+		c.session.Inc()
+	} else {
+		c.session.Store(1)
+	}
+	return (Session)(s)
+}
+
+func (c *connImpl) RegisterCallback(queue *Queue) {
+	if !queue.NeedCallback() {
+		return
+	}
+	s := c.newSession()
+	queue.SetSession(s)
+	c.callbackStore.Store(s, queue.Trigger)
 }
 
 func (c *connImpl) Close() {

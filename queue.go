@@ -8,17 +8,22 @@ type Queue struct {
 	callback chan *Message
 	timer    *time.Timer
 	timeout  time.Duration
+	session  Session
 }
 
-func (q *Queue) Callback() chan *Message {
-	return q.callback
+func (q *Queue) Session() Session {
+	return q.session
 }
 
-func (q *Queue) SetCallback(callback chan *Message) {
-	q.callback = callback
+func (q *Queue) SetSession(session Session) {
+	q.session = session
 }
 
-func (q *Queue) TriggerCallback(message *Message) {
+func (q *Queue) NeedCallback() bool {
+	return q.callback != nil
+}
+
+func (q *Queue) Trigger(message *Message) {
 	if q.callback != nil {
 		if q.timeout != 0 {
 			q.timer.Reset(q.timeout)
@@ -31,8 +36,8 @@ func (q *Queue) TriggerCallback(message *Message) {
 	}
 }
 
-// WaitCallback ...
-func (q *Queue) WaitCallback() *Message {
+// Wait ...
+func (q *Queue) Wait() *Message {
 	if q.callback != nil {
 		if q.timeout != 0 {
 			q.timer.Reset(q.timeout)
@@ -72,9 +77,17 @@ func (q *Queue) Send(out chan<- *Queue) bool {
 }
 
 // NewQueue ...
-func NewQueue(msg *Message, enableCallback bool) *Queue {
+func DefaultQueue(msg *Message) *Queue {
 	return &Queue{
 		timer:   time.NewTimer(0),
 		message: msg,
+	}
+}
+
+func CallbackQueue(msg *Message) *Queue {
+	return &Queue{
+		timer:    time.NewTimer(0),
+		callback: make(chan *Message),
+		message:  msg,
 	}
 }
