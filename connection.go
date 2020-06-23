@@ -58,6 +58,14 @@ func (c *connImpl) send() {
 
 }
 
+// ScanExchange ...
+func ScanExchange(scanner *bufio.Scanner, packer ReadPacker) error {
+
+	r := bytes.NewReader(scanner.Bytes())
+	return packer.Unpack(r)
+
+}
+
 func dataScan(conn net.Conn) *bufio.Scanner {
 	scanner := bufio.NewScanner(conn)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -68,7 +76,7 @@ func dataScan(conn net.Conn) *bufio.Scanner {
 				if err != nil {
 					return 0, nil, err
 				}
-				length += 24
+				length += 28
 				if int(length) <= len(data) {
 					return int(length), data[:int(length)], nil
 				}
