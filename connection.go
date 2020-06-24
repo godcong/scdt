@@ -27,7 +27,14 @@ type connImpl struct {
 	callbackStore *sync.Map
 	recvStore     *sync.Map
 	sendQueue     chan *Queue
-	closed        chan bool
+	closed        *atomic.Bool
+}
+
+func (c *connImpl) IsClosed() bool {
+	if c.closed != nil {
+		return c.closed.Load()
+	}
+	return true
 }
 
 func (c *connImpl) LocalID() string {
@@ -81,7 +88,7 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 		recvStore:     new(sync.Map),
 		remoteID:      atomic.NewString(""),
 		sendQueue:     make(chan *Queue),
-		closed:        make(chan bool),
+		closed:        atomic.NewBool(false),
 	}
 	return runConnection(impl)
 }
@@ -98,11 +105,6 @@ func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
 	}}
 	tmp = append(tmp, cfs...)
 	return NewConn(conn, tmp...)
-}
-func (c *connImpl) Wait() {
-	<-c.closed
-	close(c.closed)
-	c.closed = nil
 }
 
 func (c *connImpl) sendMessage(pack WritePacker) error {
@@ -199,7 +201,7 @@ func (c *connImpl) Close() {
 	c.hbCheck.Reset(0)
 
 	if c.closed != nil {
-		c.closed <- true
+		c.closed.Store(true)
 	}
 }
 

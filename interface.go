@@ -13,7 +13,7 @@ type Connection interface {
 	RemoteID() (string, error)
 	MessageCallback(fn MessageCallbackFunc)
 	Close()
-	Wait()
+	IsClosed() bool
 }
 
 type SendCallback func(packer ReadPacker)

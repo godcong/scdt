@@ -62,8 +62,7 @@ func (l *listener) listen() {
 			}
 			log.Infow("new connect", "id", id)
 			l.conns.Store(id, c)
-			c.Wait()
-			l.conns.Delete(id)
+
 		})
 	}
 }
