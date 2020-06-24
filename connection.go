@@ -18,6 +18,8 @@ type connImpl struct {
 	cancel        context.CancelFunc
 	fn            MessageCallbackFunc
 	cfg           *Config
+	localID       string
+	remoteID      *atomic.String
 	conn          net.Conn
 	hbCheck       *time.Timer
 	session       *atomic.Uint32
@@ -36,10 +38,17 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 	for _, cf := range cfs {
 		cf(cfg)
 	}
+
+	ider := UUID
+	if cfg.CustomIDer != nil {
+		ider = cfg.CustomIDer
+	}
+
 	ctx, cancel := context.WithCancel(context.TODO())
 	impl := &connImpl{
 		ctx:           ctx,
 		cancel:        cancel,
+		localID:       ider(),
 		cfg:           cfg,
 		conn:          conn,
 		hbCheck:       time.NewTimer(cfg.Timeout),
