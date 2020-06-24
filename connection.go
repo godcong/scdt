@@ -127,7 +127,7 @@ func (c *connImpl) recv() {
 			if err != nil {
 				panic(err)
 			}
-			log.Infow("recv", "msg", msg)
+			log.Debugw("recv", "msg", msg)
 			go c.doRecv(&msg)
 		}
 	}
@@ -158,7 +158,7 @@ func (c *connImpl) send() {
 
 		case q := <-c.sendQueue:
 			c.addCallback(q)
-			log.Infow("send", "msg", q.message)
+			log.Debugw("send", "msg", q.message)
 			err := c.sendMessage(q.message)
 			if err != nil {
 				panic(err)

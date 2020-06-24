@@ -12,7 +12,6 @@ import (
 )
 
 func TestListener_Stop(t *testing.T) {
-
 	lis, err := NewListener("0.0.0.0:12345")
 	if err != nil {
 		panic(err)
