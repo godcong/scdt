@@ -2,6 +2,10 @@ package scdt
 
 import "io"
 
+type Listener interface {
+	MessageCallback(func(data []byte))
+}
+
 type Connection interface {
 	Wait()
 }

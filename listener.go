@@ -10,9 +10,6 @@ import (
 	"github.com/portmapping/go-reuse"
 )
 
-type Listener interface {
-}
-
 type listener struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
