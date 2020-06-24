@@ -21,7 +21,7 @@ type listener struct {
 	gcTicker *time.Ticker
 }
 
-func (l *listener) GC() {
+func (l *listener) gc() {
 	for {
 		select {
 		case <-l.ctx.Done():
@@ -35,7 +35,7 @@ func (l *listener) GC() {
 	}
 }
 
-func (l *listener) Listen() {
+func (l *listener) listen() {
 	for {
 		conn, err := l.listener.Accept()
 		if err != nil {
@@ -67,8 +67,8 @@ func NewListener(addr string) (Listener, error) {
 		gcTicker: time.NewTicker(30 * time.Minute),
 	}
 
-	go lis.GC()
-	go lis.Listen()
+	go lis.gc()
+	go lis.listen()
 	return lis, nil
 
 }
