@@ -2,4 +2,8 @@ module github.com/godcong/scdt
 
 go 1.14
 
-require go.uber.org/atomic v1.6.0
+require (
+	github.com/panjf2000/ants/v2 v2.4.1
+	github.com/portmapping/go-reuse v0.0.3
+	go.uber.org/atomic v1.6.0
+)

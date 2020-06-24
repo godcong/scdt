@@ -21,7 +21,7 @@ type connImpl struct {
 	hbCheck       *time.Timer
 	session       *atomic.Uint32
 	callbackStore *sync.Map
-	msgCB         func(msg *Message)
+	recvStore     *sync.Map
 	sendQueue     chan *Queue
 }
 
@@ -32,11 +32,15 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 	}
 	ctx, cancel := context.WithCancel(context.TODO())
 	impl := &connImpl{
-		ctx:     ctx,
-		cancel:  cancel,
-		cfg:     cfg,
-		conn:    conn,
-		session: atomic.NewUint32(1),
+		ctx:           ctx,
+		cancel:        cancel,
+		cfg:           cfg,
+		conn:          conn,
+		hbCheck:       time.NewTimer(cfg.Timeout),
+		session:       atomic.NewUint32(1),
+		callbackStore: new(sync.Map),
+		recvStore:     new(sync.Map),
+		sendQueue:     make(chan *Queue),
 	}
 	return runConnection(impl)
 }
@@ -177,6 +181,7 @@ func (c *connImpl) recvRequest(msg *Message) {
 	//if !b {
 	//	return
 	//}
+
 	//ignore error
 	newMsg, _ := recvRequest(msg, nil)
 	newMsg.Session = msg.Session
