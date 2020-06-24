@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/portmapping/go-reuse"
 	"net"
+	"sync"
 	"testing"
 	"time"
 )
@@ -22,18 +23,17 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 		IP:   net.IPv4zero,
 		Port: 0,
 	}
-	for i := 0; i < 1; i++ {
+	wg := &sync.WaitGroup{}
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			dial, err := reuse.Dial("tcp", addr.String(), "localhost:12345")
 			if err != nil {
-				t.Fatal(err)
+				log.Errorw("dail error", "err", err)
 			}
 			connect := Connect(dial)
-			//connect.MessageCallback(func(data []byte) {
-			//	fmt.Println(string(data))
-			//})
 			log.Infow("request remote id", "local", connect.LocalID())
-
 			id, err := connect.RemoteID()
 			if err != nil {
 				t.Fatal(err)
@@ -41,5 +41,5 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 			fmt.Println("local id", connect.LocalID(), "remote id", id)
 		}()
 	}
-	time.Sleep(30 * time.Minute)
+	wg.Wait()
 }

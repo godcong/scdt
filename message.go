@@ -56,7 +56,7 @@ func NewRecvMessage(id MessageID) *Message {
 
 func (m *Message) Unpack(reader io.Reader) (err error) {
 	var v []interface{}
-	v = append(v, &m.version, &m.requestType, &m.MessageID, &m.DataLength)
+	v = append(v, &m.version, &m.requestType, &m.MessageID, &m.DataLength, &m.Session)
 	for i := range v {
 		err = binary.Read(reader, binary.BigEndian, v[i])
 		if err != nil {
@@ -75,7 +75,7 @@ func (m *Message) Unpack(reader io.Reader) (err error) {
 // Pack ...
 func (m Message) Pack(writer io.Writer) (err error) {
 	var v []interface{}
-	v = append(v, &m.version, &m.requestType, &m.MessageID, &m.DataLength, &m.Data)
+	v = append(v, &m.version, &m.requestType, &m.MessageID, &m.DataLength, &m.Session, &m.Data)
 	for i := range v {
 		err = binary.Write(writer, binary.BigEndian, v[i])
 		if err != nil {

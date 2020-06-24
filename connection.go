@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"math"
 	"net"
 	"sync"
@@ -44,6 +45,8 @@ func (c *connImpl) RemoteID() (string, error) {
 			if msg != nil && msg.DataLength != 0 {
 				id = string(msg.Data)
 				c.remoteID.Store(id)
+			} else {
+				return "", errors.New("failed to get response message")
 			}
 		}
 	}
@@ -234,9 +237,9 @@ func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) 
 }
 func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	id := v.(string)
-	log.Infow("local", "id", id)
 	msg = NewSendMessage(src.MessageID, toBytes(id))
 	msg.Session = src.Session
+	log.Infow("local", "id", id, "src", src, "target", msg)
 	return
 }
 
@@ -278,7 +281,6 @@ func (c *connImpl) GetCallback(session Session) (f func(message *Message), b boo
 
 // ScanExchange ...
 func ScanExchange(scanner *bufio.Scanner, packer ReadPacker) error {
-	log.Infow("scan", "data", string(scanner.Bytes()))
 	r := bytes.NewReader(scanner.Bytes())
 	return packer.Unpack(r)
 }
