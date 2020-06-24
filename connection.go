@@ -29,6 +29,25 @@ type connImpl struct {
 	closed        chan bool
 }
 
+func (c *connImpl) LocalID() string {
+	return c.localID
+}
+
+func (c *connImpl) RemoteID() (string, error) {
+	id := c.remoteID.Load()
+	if id == "" {
+		queue := CallbackQueue(NewSendMessage(MessageConnectID, nil))
+		if queue.Send(c.sendQueue) {
+			msg := queue.Wait()
+			if msg.DataLength != 0 {
+				id = string(msg.Data)
+				c.remoteID.Store(id)
+			}
+		}
+	}
+	return id, nil
+}
+
 func (c *connImpl) MessageCallback(fn MessageCallbackFunc) {
 	c.fn = fn
 }
