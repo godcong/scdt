@@ -2,6 +2,7 @@ package scdt
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"runtime"
 	"sync"
@@ -50,10 +51,12 @@ func (l *listener) listen() {
 		}
 		l.pool.Submit(func() {
 			c := Accept(conn)
+			fmt.Println("new connect")
 			id, err := c.RemoteID()
 			if err != nil {
 				return
 			}
+			fmt.Println("new connect id", id)
 			l.conns.Store(id, c)
 			c.Wait()
 			l.conns.Delete(id)

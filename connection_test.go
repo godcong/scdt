@@ -37,4 +37,5 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 		}
 		fmt.Println("local id", connect.LocalID(), "remote id", id)
 	}
+	time.Sleep(30 * time.Minute)
 }
