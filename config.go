@@ -6,9 +6,8 @@ import "github.com/google/uuid"
 type CustomIDerFunc func() string
 
 type Config struct {
-	HearBeatCheck bool
-	CustomIDer    CustomIDerFunc
-	Timeout       time.Duration
+	CustomIDer CustomIDerFunc
+	Timeout    time.Duration
 }
 
 type ConfigFunc func(c *Config)

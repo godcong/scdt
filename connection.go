@@ -36,7 +36,9 @@ func (c *connImpl) LocalID() string {
 func (c *connImpl) RemoteID() (string, error) {
 	id := c.remoteID.Load()
 	if id == "" {
-		queue := CallbackQueue(NewSendMessage(MessageConnectID, nil))
+		msg := NewRecvMessage(MessageConnectID)
+		msg.SetDataString("hello world")
+		queue := CallbackQueue(msg)
 		if queue.Send(c.sendQueue) {
 			msg := queue.Wait()
 			if msg != nil && msg.DataLength != 0 {
@@ -88,10 +90,11 @@ func Accept(conn net.Conn, cfs ...ConfigFunc) Connection {
 
 // ConnectNode ...
 func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
-	cfs = append(cfs, func(c *Config) {
-		c.HearBeatCheck = true
-	})
-	return NewConn(conn, cfs...)
+	tmp := []ConfigFunc{func(c *Config) {
+		c.Timeout = 30 * time.Second
+	}}
+	tmp = append(tmp, cfs...)
+	return NewConn(conn, tmp...)
 }
 func (c *connImpl) Wait() {
 	<-c.closed
@@ -137,16 +140,14 @@ func (c *connImpl) send() {
 		case <-c.ctx.Done():
 			return
 		case <-c.hbCheck.C:
-			if !c.cfg.HearBeatCheck {
+			if c.cfg.Timeout == 0 {
 				continue
 			}
-			err = c.sendMessage(NewSendMessage(MessageHeartBeat, nil))
+			err = c.sendMessage(NewRecvMessage(MessageHeartBeat))
 			if err != nil {
 				panic(err)
 			}
-			if c.cfg.Timeout > 0 {
-				c.hbCheck.Reset(c.cfg.Timeout)
-			}
+			c.hbCheck.Reset(c.cfg.Timeout)
 
 		case q := <-c.sendQueue:
 			log.Infow("send", "msg", q.message)

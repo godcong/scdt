@@ -7,21 +7,15 @@ import (
 	"time"
 )
 
-func servListen() {
+func TestListener_Stop(t *testing.T) {
 	lis, err := NewListener("0.0.0.0:12345")
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(30 * time.Minute)
-	lis.Stop()
+
+	lis.Listen()
 }
-
-func init() {
-
-}
-
 func TestConnImpl_MessageCallback(t *testing.T) {
-	go servListen()
 	for i := 0; i < 10; i++ {
 		dial, err := reuse.Dial("tcp", "", "localhost:12345")
 		if err != nil {
