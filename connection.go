@@ -239,7 +239,7 @@ func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	id := v.(string)
 	msg = NewSendMessage(src.MessageID, toBytes(id))
 	msg.Session = src.Session
-	log.Infow("local", "id", id, "src", src, "target", msg)
+	log.Debugw("local", "id", id, "src", src, "target", msg)
 	return
 }
 
