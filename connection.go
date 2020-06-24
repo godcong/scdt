@@ -149,7 +149,6 @@ func (c *connImpl) send() {
 	}()
 	for {
 		select {
-
 		case <-c.ctx.Done():
 			return
 		case <-c.hbCheck.C:
@@ -168,6 +167,11 @@ func (c *connImpl) send() {
 			if err != nil {
 				panic(err)
 			}
+		default:
+			if c.IsClosed() {
+				return
+			}
+			time.Sleep(30 * time.Millisecond)
 		}
 	}
 }
