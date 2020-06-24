@@ -39,7 +39,7 @@ func (c *connImpl) RemoteID() (string, error) {
 		queue := CallbackQueue(NewSendMessage(MessageConnectID, nil))
 		if queue.Send(c.sendQueue) {
 			msg := queue.Wait()
-			if msg.DataLength != 0 {
+			if msg != nil && msg.DataLength != 0 {
 				id = string(msg.Data)
 				c.remoteID.Store(id)
 			}
@@ -74,6 +74,7 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 		session:       atomic.NewUint32(1),
 		callbackStore: new(sync.Map),
 		recvStore:     new(sync.Map),
+		remoteID:      atomic.NewString(""),
 		sendQueue:     make(chan *Queue),
 		closed:        make(chan bool),
 	}
@@ -203,8 +204,10 @@ func (c *connImpl) doRecv(msg *Message) {
 }
 
 var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, err error){
-	MessageDataTransfer: recvRequest,
-	MessageHeartBeat:    recvRequest,
+	MessageDataTransfer: recvRequestDataTransfer,
+	MessageHeartBeat:    recvRequestHearBeat,
+	MessageConnectID:    recvRequestID,
+	MessageUserCustom:   recvRequest,
 }
 
 func recvRequest(src *Message, v interface{}) (msg *Message, err error) {
@@ -220,15 +223,20 @@ func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) 
 	msg = NewRecvMessage(src.MessageID)
 	return
 }
+func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
+	id := v.(string)
+	msg = NewSendMessage(src.MessageID, []byte(id))
+	return
+}
 
 func (c *connImpl) recvRequest(msg *Message) {
-	//f, b := recvReqFunc[msg.MessageID]
-	//if !b {
-	//	return
-	//}
+	f, b := recvReqFunc[msg.MessageID]
+	if !b {
+		return
+	}
 
 	//ignore error
-	newMsg, _ := recvRequest(msg, nil)
+	newMsg, _ := f(msg, c.localID)
 	newMsg.Session = msg.Session
 	DefaultQueue(newMsg).Send(c.sendQueue)
 }

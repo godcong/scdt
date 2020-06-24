@@ -21,12 +21,19 @@ func init() {
 }
 
 func TestConnImpl_MessageCallback(t *testing.T) {
-	dial, err := reuse.Dial("tcp", "", "localhost:12345")
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < 1000; i++ {
+		dial, err := reuse.Dial("tcp", "", "localhost:12345")
+		if err != nil {
+			t.Fatal(err)
+		}
+		connect := Connect(dial)
+		connect.MessageCallback(func(data []byte) {
+			fmt.Println(string(data))
+		})
+		id, err := connect.RemoteID()
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println("local id", connect.LocalID(), "remote id", id)
 	}
-	connect := Connect(dial)
-	connect.MessageCallback(func(data []byte) {
-		fmt.Println(string(data))
-	})
 }
