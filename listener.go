@@ -77,6 +77,7 @@ func NewListener(addr string) (Listener, error) {
 		cancel:   cancel,
 		listener: l,
 		pool:     pool,
+		conns:    new(sync.Map),
 		gcTicker: time.NewTicker(30 * time.Minute),
 	}
 
