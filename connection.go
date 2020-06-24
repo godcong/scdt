@@ -30,6 +30,8 @@ type connImpl struct {
 	closed        *atomic.Bool
 }
 
+var defaultConnSendTimeout = 30 * time.Second
+
 func (c *connImpl) IsClosed() bool {
 	if c.closed != nil {
 		return c.closed.Load()
@@ -146,6 +148,7 @@ func (c *connImpl) send() {
 	}()
 	for {
 		select {
+
 		case <-c.ctx.Done():
 			return
 		case <-c.hbCheck.C:

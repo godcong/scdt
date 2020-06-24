@@ -55,15 +55,14 @@ func (l *listener) listen() {
 					return myid
 				}
 			})
-			log.Infow("new connect")
 			id, err := c.RemoteID()
 			if err != nil {
 				return
 			}
-			log.Infow("new connect", "id", id)
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
-				time.Sleep(5 * time.Second)
+				time.Sleep(15 * time.Second)
+				log.Infow("connecting", "id", id)
 			}
 			l.conns.Delete(id)
 		})
