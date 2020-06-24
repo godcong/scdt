@@ -5,6 +5,7 @@ import "io"
 type MessageCallbackFunc func(data []byte)
 
 type Listener interface {
+	Stop() error
 }
 
 type Connection interface {

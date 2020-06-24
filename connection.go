@@ -257,7 +257,6 @@ func dataScan(conn net.Conn) *bufio.Scanner {
 
 func runConnection(impl *connImpl) Connection {
 	impl.hbCheck = time.NewTimer(impl.cfg.Timeout)
-
 	go impl.recv()
 	go impl.send()
 	return impl
