@@ -3,7 +3,8 @@ package scdt
 import "time"
 
 type Config struct {
-	Timeout time.Duration
+	HearBeatCheck bool
+	Timeout       time.Duration
 }
 
 type ConfigFunc func(c *Config)

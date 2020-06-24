@@ -48,6 +48,9 @@ func Accept(conn net.Conn, cfs ...ConfigFunc) Connection {
 
 // ConnectNode ...
 func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
+	cfs = append(cfs, func(c *Config) {
+		c.HearBeatCheck = true
+	})
 	return NewConn(conn, cfs...)
 }
 
@@ -87,9 +90,12 @@ func (c *connImpl) send() {
 		case <-c.ctx.Done():
 			return
 		case <-c.hbCheck.C:
+			if !c.cfg.HearBeatCheck {
+				continue
+			}
 			err = c.sendMessage(NewSendMessage(MessageHeartBeat, nil))
 			if err != nil {
-				return
+				panic(err)
 			}
 			if c.cfg.Timeout > 0 {
 				c.hbCheck.Reset(c.cfg.Timeout)
@@ -99,7 +105,7 @@ func (c *connImpl) send() {
 			c.addCallback(q)
 			err = c.sendMessage(q.message)
 			if err != nil {
-				return
+				panic(err)
 			}
 		}
 	}
@@ -132,6 +138,7 @@ func (c *connImpl) Close() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
+	c.hbCheck.Reset(0)
 }
 
 func (c *connImpl) doRecv(msg *Message) {
