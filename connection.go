@@ -106,6 +106,7 @@ func (c *connImpl) sendMessage(pack WritePacker) error {
 func (c *connImpl) recv() {
 	scan := dataScan(c.conn)
 	for scan.Scan() {
+		log.Infow("recv running")
 		select {
 		case <-c.ctx.Done():
 			return
@@ -278,7 +279,7 @@ func dataScan(conn net.Conn) *bufio.Scanner {
 	scanner := bufio.NewScanner(conn)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if !atEOF && data[0] == 'v' {
-			if len(data) > 12 {
+			if len(data) > 16 {
 				length := uint64(0)
 				err := binary.Read(bytes.NewReader(data[8:16]), binary.BigEndian, &length)
 				if err != nil {
