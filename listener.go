@@ -43,13 +43,18 @@ func (l *listener) gc() {
 }
 
 func (l *listener) listen() {
+	myid := UUID()
 	for {
 		conn, err := l.listener.Accept()
 		if err != nil {
 			continue
 		}
 		l.pool.Submit(func() {
-			c := Accept(conn)
+			c := Accept(conn, func(c *Config) {
+				c.CustomIDer = func() string {
+					return myid
+				}
+			})
 			log.Infow("new connect")
 			id, err := c.RemoteID()
 			if err != nil {
@@ -80,7 +85,7 @@ func NewListener(addr string) (Listener, error) {
 		listener: l,
 		pool:     pool,
 		conns:    new(sync.Map),
-		gcTicker: time.NewTicker(30 * time.Minute),
+		gcTicker: time.NewTicker(30 * time.Second),
 	}
 
 	go lis.gc()
