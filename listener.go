@@ -11,11 +11,16 @@ import (
 )
 
 type listener struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	listener net.Listener
 	pool     *ants.Pool
 	gcTicker *time.Ticker
+}
+
+func (l *listener) MessageCallback(fn MessageCallbackFunc) {
+	l.fn = fn
 }
 
 func (l *listener) gc() {

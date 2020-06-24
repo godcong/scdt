@@ -16,6 +16,7 @@ import (
 type connImpl struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
+	fn            MessageCallbackFunc
 	cfg           *Config
 	conn          net.Conn
 	hbCheck       *time.Timer
@@ -24,6 +25,10 @@ type connImpl struct {
 	recvStore     *sync.Map
 	sendQueue     chan *Queue
 	closed        chan bool
+}
+
+func (c *connImpl) MessageCallback(fn MessageCallbackFunc) {
+	c.fn = fn
 }
 
 func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {

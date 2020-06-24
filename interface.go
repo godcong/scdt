@@ -2,11 +2,13 @@ package scdt
 
 import "io"
 
+type MessageCallbackFunc func(data []byte)
+
 type Listener interface {
-	MessageCallback(func(data []byte))
 }
 
 type Connection interface {
+	MessageCallback(fn MessageCallbackFunc)
 	Wait()
 }
 
