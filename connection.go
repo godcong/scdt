@@ -51,12 +51,8 @@ func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
 	return NewConn(conn, cfs...)
 }
 
-func (c *connImpl) SendMessage(pack WritePacker) error {
+func (c *connImpl) sendMessage(pack WritePacker) error {
 	return pack.Pack(c.conn)
-}
-
-func (c *connImpl) run() {
-
 }
 
 func (c *connImpl) recv() {
@@ -91,7 +87,7 @@ func (c *connImpl) send() {
 		case <-c.ctx.Done():
 			return
 		case <-c.hbCheck.C:
-			err = c.SendMessage(NewSendMessage(MessageHeartBeat, nil))
+			err = c.sendMessage(NewSendMessage(MessageHeartBeat, nil))
 			if err != nil {
 				return
 			}
@@ -101,7 +97,7 @@ func (c *connImpl) send() {
 
 		case q := <-c.sendQueue:
 			c.addCallback(q)
-			err = c.SendMessage(q.message)
+			err = c.sendMessage(q.message)
 			if err != nil {
 				return
 			}
