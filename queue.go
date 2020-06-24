@@ -2,6 +2,8 @@ package scdt
 
 import "time"
 
+var defaultQueueTimeout = 30 * time.Second
+
 // Queue ...
 type Queue struct {
 	message  *Message
@@ -83,6 +85,7 @@ func DefaultQueue(msg *Message) *Queue {
 func CallbackQueue(msg *Message) *Queue {
 	return &Queue{
 		callback: make(chan *Message),
+		timeout:  defaultQueueTimeout,
 		session:  &msg.Session,
 		message:  msg,
 	}

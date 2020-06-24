@@ -180,6 +180,7 @@ func (c *connImpl) addCallback(queue *Queue) {
 	}
 	s := c.newSession()
 	queue.SetSession(s)
+	log.Infow("queue session", "msgsession", queue.Session(), "queuesession", *queue.session)
 	c.callbackStore.Store(s, queue.Trigger)
 }
 
@@ -269,7 +270,7 @@ func (c *connImpl) GetCallback(session Session) (f func(message *Message), b boo
 	load, ok := c.callbackStore.Load(session)
 	if ok {
 		f, b = load.(func(message *Message))
-		c.callbackStore.Delete(session)
+		//c.callbackStore.Delete(session)
 	}
 	return
 }

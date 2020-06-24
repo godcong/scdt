@@ -28,9 +28,10 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 			t.Fatal(err)
 		}
 		connect := Connect(dial)
-		connect.MessageCallback(func(data []byte) {
-			fmt.Println(string(data))
-		})
+		//connect.MessageCallback(func(data []byte) {
+		//	fmt.Println(string(data))
+		//})
+		log.Infow("request remote id", "local", connect.LocalID())
 
 		id, err := connect.RemoteID()
 		if err != nil {
