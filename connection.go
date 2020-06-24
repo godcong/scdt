@@ -47,6 +47,7 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 		callbackStore: new(sync.Map),
 		recvStore:     new(sync.Map),
 		sendQueue:     make(chan *Queue),
+		closed:        make(chan bool),
 	}
 	return runConnection(impl)
 }
@@ -64,7 +65,7 @@ func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
 	return NewConn(conn, cfs...)
 }
 func (c *connImpl) Wait() {
-	c.closed = make(chan bool)
+
 	<-c.closed
 	close(c.closed)
 	c.closed = nil
@@ -256,6 +257,7 @@ func dataScan(conn net.Conn) *bufio.Scanner {
 
 func runConnection(impl *connImpl) Connection {
 	impl.hbCheck = time.NewTimer(impl.cfg.Timeout)
+
 	go impl.recv()
 	go impl.send()
 	return impl
