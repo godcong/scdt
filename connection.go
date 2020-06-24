@@ -43,8 +43,8 @@ func (c *connImpl) LocalID() string {
 	return c.localID
 }
 
-func (c *connImpl) RemoteID() (string, error) {
-	id := c.remoteID.Load()
+func (c *connImpl) RemoteID() (id string, err error) {
+	id = c.remoteID.Load()
 	if id == "" {
 		msg := NewRecvMessage(MessageConnectID)
 		msg.SetDataString("hello world")
@@ -54,10 +54,11 @@ func (c *connImpl) RemoteID() (string, error) {
 			if msg != nil && msg.DataLength != 0 {
 				id = string(msg.Data)
 				c.remoteID.Store(id)
-			} else {
-				return "", errors.New("failed to get response message")
+				return
 			}
+			return "", errors.New("get response message failed")
 		}
+		return "", errors.New("send id request failed")
 	}
 	return id, nil
 }
