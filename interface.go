@@ -3,6 +3,7 @@ package scdt
 import "io"
 
 type Connection interface {
+	Wait()
 }
 
 type SendCallback func(packer ReadPacker)

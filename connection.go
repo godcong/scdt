@@ -23,6 +23,7 @@ type connImpl struct {
 	callbackStore *sync.Map
 	recvStore     *sync.Map
 	sendQueue     chan *Queue
+	closed        chan bool
 }
 
 func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
@@ -56,6 +57,12 @@ func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
 		c.HearBeatCheck = true
 	})
 	return NewConn(conn, cfs...)
+}
+func (c *connImpl) Wait() {
+	c.closed = make(chan bool)
+	<-c.closed
+	close(c.closed)
+	c.closed = nil
 }
 
 func (c *connImpl) sendMessage(pack WritePacker) error {
@@ -143,6 +150,10 @@ func (c *connImpl) Close() {
 		c.conn.Close()
 	}
 	c.hbCheck.Reset(0)
+
+	if c.closed != nil {
+		c.closed <- true
+	}
 }
 
 func (c *connImpl) doRecv(msg *Message) {
