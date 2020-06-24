@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/panjf2000/ants/v2"
@@ -16,6 +17,7 @@ type listener struct {
 	listener net.Listener
 	pool     *ants.Pool
 	gcTicker *time.Ticker
+	conns    *sync.Map
 }
 
 func (l *listener) Stop() error {
@@ -48,7 +50,13 @@ func (l *listener) listen() {
 		}
 		l.pool.Submit(func() {
 			c := Accept(conn)
+			id, err := c.RemoteID()
+			if err != nil {
+				return
+			}
+			l.conns.Store(id, c)
 			c.Wait()
+			l.conns.Delete(id)
 		})
 	}
 }
