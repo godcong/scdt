@@ -107,6 +107,11 @@ func (c *connImpl) sendMessage(pack WritePacker) error {
 }
 
 func (c *connImpl) recv() {
+	defer func() {
+		if recover() != nil {
+			c.Close()
+		}
+	}()
 	scan := dataScan(c.conn)
 	for scan.Scan() {
 		log.Infow("recv running")
@@ -129,9 +134,8 @@ func (c *connImpl) recv() {
 }
 
 func (c *connImpl) send() {
-	var err error
 	defer func() {
-		if err != nil {
+		if recover() != nil {
 			c.Close()
 		}
 	}()
@@ -143,7 +147,7 @@ func (c *connImpl) send() {
 			if c.cfg.Timeout == 0 {
 				continue
 			}
-			err = c.sendMessage(NewRecvMessage(MessageHeartBeat))
+			err := c.sendMessage(NewRecvMessage(MessageHeartBeat))
 			if err != nil {
 				panic(err)
 			}
@@ -152,7 +156,7 @@ func (c *connImpl) send() {
 		case q := <-c.sendQueue:
 			log.Infow("send", "msg", q.message)
 			c.addCallback(q)
-			err = c.sendMessage(q.message)
+			err := c.sendMessage(q.message)
 			if err != nil {
 				panic(err)
 			}
