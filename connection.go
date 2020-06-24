@@ -150,28 +150,32 @@ func (c *connImpl) doRecv(msg *Message) {
 	}
 }
 
-var recvReqFunc = map[MessageID]func(v interface{}) (msg *Message, err error){
-	MessageDataTransfer: recvRequestDataTransfer,
-	MessageHeartBeat:    recvRequestHearBeat,
+var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, err error){
+	MessageDataTransfer: recvRequest,
+	MessageHeartBeat:    recvRequest,
 }
 
-func recvRequestDataTransfer(v interface{}) (msg *Message, err error) {
-	msg = NewRecvMessage(MessageDataTransfer)
+func recvRequest(src *Message, v interface{}) (msg *Message, err error) {
+	msg = NewRecvMessage(src.MessageID)
+	return
+}
+func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err error) {
+	msg = NewRecvMessage(src.MessageID)
 	return
 }
 
-func recvRequestHearBeat(v interface{}) (msg *Message, err error) {
-	msg = NewRecvMessage(MessageHeartBeat)
+func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) {
+	msg = NewRecvMessage(src.MessageID)
 	return
 }
 
 func (c *connImpl) recvRequest(msg *Message) {
-	f, b := recvReqFunc[msg.MessageID]
-	if !b {
-		return
-	}
+	//f, b := recvReqFunc[msg.MessageID]
+	//if !b {
+	//	return
+	//}
 	//ignore error
-	newMsg, _ := f(nil)
+	newMsg, _ := recvRequest(msg, nil)
 	newMsg.Session = msg.Session
 	DefaultQueue(newMsg).Send(c.sendQueue)
 }

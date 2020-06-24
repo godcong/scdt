@@ -23,6 +23,7 @@ const (
 const (
 	MessageHeartBeat    MessageID = 0x01
 	MessageDataTransfer MessageID = 0x02
+	MessageUserCustom   MessageID = 0x03
 )
 
 type Message struct {
