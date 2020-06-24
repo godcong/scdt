@@ -6,7 +6,6 @@ import "time"
 type Queue struct {
 	message  *Message
 	callback chan *Message
-	timer    *time.Timer
 	timeout  time.Duration
 	session  *Session //link msg.session => session
 }
@@ -28,13 +27,11 @@ func (q *Queue) NeedCallback() bool {
 
 func (q *Queue) Trigger(message *Message) {
 	if q.callback != nil {
-		if q.timeout != 0 {
-			q.timer.Reset(q.timeout)
-		}
+		t := time.NewTimer(q.timeout)
+		defer t.Reset(0)
 		select {
-		case <-q.timer.C:
+		case <-t.C:
 		case q.callback <- message:
-			q.timer.Reset(0)
 		}
 	}
 }
@@ -42,13 +39,11 @@ func (q *Queue) Trigger(message *Message) {
 // Wait ...
 func (q *Queue) Wait() *Message {
 	if q.callback != nil {
-		if q.timeout != 0 {
-			q.timer.Reset(q.timeout)
-		}
+		t := time.NewTimer(q.timeout)
+		defer t.Reset(0)
 		select {
-		case <-q.timer.C:
+		case <-t.C:
 		case cb := <-q.callback:
-			q.timer.Reset(0)
 			return cb
 		}
 	}
@@ -67,14 +62,13 @@ func (q *Queue) Send(out chan<- *Queue) bool {
 	if out == nil {
 		return false
 	}
-	if q.timeout != 0 {
-		q.timer.Reset(q.timeout)
-	}
+
+	t := time.NewTimer(q.timeout)
+	defer t.Reset(0)
 	select {
-	case <-q.timer.C:
+	case <-t.C:
 		return false
 	case out <- q:
-		q.timer.Reset(0)
 		return true
 	}
 }
@@ -82,14 +76,12 @@ func (q *Queue) Send(out chan<- *Queue) bool {
 // NewQueue ...
 func DefaultQueue(msg *Message) *Queue {
 	return &Queue{
-		timer:   time.NewTimer(0),
 		message: msg,
 	}
 }
 
 func CallbackQueue(msg *Message) *Queue {
 	return &Queue{
-		timer:    time.NewTimer(0),
 		callback: make(chan *Message),
 		session:  &msg.Session,
 		message:  msg,

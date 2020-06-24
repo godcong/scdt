@@ -149,6 +149,7 @@ func (c *connImpl) send() {
 			}
 
 		case q := <-c.sendQueue:
+			fmt.Printf("send:%+v\n", q)
 			c.addCallback(q)
 			err = c.sendMessage(q.message)
 			if err != nil {
