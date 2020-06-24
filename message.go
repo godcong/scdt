@@ -85,3 +85,13 @@ func (m Message) Pack(writer io.Writer) (err error) {
 	}
 	return nil
 }
+
+func (m *Message) SetDataString(data string) {
+	m.Data = []byte(data)
+	m.DataLength = DataLength(len(m.Data))
+}
+
+func (m *Message) SetData(data []byte) {
+	m.Data = data
+	m.DataLength = DataLength(len(m.Data))
+}

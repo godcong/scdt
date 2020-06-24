@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"net"
 	"sync"
@@ -225,7 +226,9 @@ func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) 
 }
 func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	id := v.(string)
-	msg = NewSendMessage(src.MessageID, []byte(id))
+	fmt.Println("local id is", id)
+	msg = NewRecvMessage(src.MessageID)
+	msg.SetDataString(id)
 	return
 }
 
@@ -234,7 +237,7 @@ func (c *connImpl) recvRequest(msg *Message) {
 	if !b {
 		return
 	}
-
+	fmt.Printf("recv:%+v\n", msg)
 	//ignore error
 	newMsg, _ := f(msg, c.localID)
 	newMsg.Session = msg.Session

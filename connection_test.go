@@ -21,7 +21,7 @@ func init() {
 }
 
 func TestConnImpl_MessageCallback(t *testing.T) {
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		dial, err := reuse.Dial("tcp", "", "localhost:12345")
 		if err != nil {
 			t.Fatal(err)
@@ -30,6 +30,7 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 		connect.MessageCallback(func(data []byte) {
 			fmt.Println(string(data))
 		})
+
 		id, err := connect.RemoteID()
 		if err != nil {
 			t.Fatal(err)
