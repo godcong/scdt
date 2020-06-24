@@ -23,21 +23,23 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 		Port: 0,
 	}
 	for i := 0; i < 1; i++ {
-		dial, err := reuse.Dial("tcp", addr.String(), "localhost:12345")
-		if err != nil {
-			t.Fatal(err)
-		}
-		connect := Connect(dial)
-		//connect.MessageCallback(func(data []byte) {
-		//	fmt.Println(string(data))
-		//})
-		log.Infow("request remote id", "local", connect.LocalID())
+		go func() {
+			dial, err := reuse.Dial("tcp", addr.String(), "localhost:12345")
+			if err != nil {
+				t.Fatal(err)
+			}
+			connect := Connect(dial)
+			//connect.MessageCallback(func(data []byte) {
+			//	fmt.Println(string(data))
+			//})
+			log.Infow("request remote id", "local", connect.LocalID())
 
-		id, err := connect.RemoteID()
-		if err != nil {
-			t.Fatal(err)
-		}
-		fmt.Println("local id", connect.LocalID(), "remote id", id)
+			id, err := connect.RemoteID()
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println("local id", connect.LocalID(), "remote id", id)
+		}()
 	}
 	time.Sleep(30 * time.Minute)
 }

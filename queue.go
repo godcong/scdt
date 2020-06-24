@@ -78,6 +78,7 @@ func (q *Queue) Send(out chan<- *Queue) bool {
 // NewQueue ...
 func DefaultQueue(msg *Message) *Queue {
 	return &Queue{
+		timeout: defaultQueueTimeout,
 		message: msg,
 	}
 }

@@ -154,8 +154,8 @@ func (c *connImpl) send() {
 			c.hbCheck.Reset(c.cfg.Timeout)
 
 		case q := <-c.sendQueue:
-			log.Infow("send", "msg", q.message)
 			c.addCallback(q)
+			log.Infow("send", "msg", q.message)
 			err := c.sendMessage(q.message)
 			if err != nil {
 				panic(err)
@@ -179,8 +179,8 @@ func (c *connImpl) addCallback(queue *Queue) {
 		return
 	}
 	s := c.newSession()
+	log.Infow("add callback", "session", s)
 	queue.SetSession(s)
-	log.Infow("queue session", "msgsession", queue.Session(), "queuesession", *queue.session)
 	c.callbackStore.Store(s, queue.Trigger)
 }
 
@@ -220,23 +220,23 @@ var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message,
 }
 
 func recvRequest(src *Message, v interface{}) (msg *Message, err error) {
-	msg = NewRecvMessage(src.MessageID)
+	msg = NewSendMessage(src.MessageID, nil)
 	return
 }
 func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err error) {
-	msg = NewRecvMessage(src.MessageID)
+	msg = NewSendMessage(src.MessageID, nil)
 	return
 }
 
 func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) {
-	msg = NewRecvMessage(src.MessageID)
+	msg = NewSendMessage(src.MessageID, nil)
 	return
 }
 func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	id := v.(string)
 	log.Infow("local", "id", id)
-	msg = NewRecvMessage(src.MessageID)
-	msg.SetDataString(id)
+	msg = NewSendMessage(src.MessageID, toBytes(id))
+	msg.Session = src.Session
 	return
 }
 
@@ -267,16 +267,18 @@ func (c *connImpl) GetCallback(session Session) (f func(message *Message), b boo
 	if session == 0 {
 		return
 	}
+	log.Infow("load callback", "session", session)
 	load, ok := c.callbackStore.Load(session)
 	if ok {
 		f, b = load.(func(message *Message))
-		//c.callbackStore.Delete(session)
+		log.Infow("callback", "has", b)
 	}
 	return
 }
 
 // ScanExchange ...
 func ScanExchange(scanner *bufio.Scanner, packer ReadPacker) error {
+	log.Infow("scan", "data", string(scanner.Bytes()))
 	r := bytes.NewReader(scanner.Bytes())
 	return packer.Unpack(r)
 }
@@ -307,4 +309,11 @@ func runConnection(impl *connImpl) Connection {
 	go impl.recv()
 	go impl.send()
 	return impl
+}
+
+func toBytes(s string) []byte {
+	if s == "" {
+		return nil
+	}
+	return []byte(s)
 }
