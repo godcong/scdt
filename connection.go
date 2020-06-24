@@ -157,7 +157,6 @@ func (c *connImpl) send() {
 				panic(err)
 			}
 			c.hbCheck.Reset(c.cfg.Timeout)
-
 		case q := <-c.sendQueue:
 			c.addCallback(q)
 			log.Debugw("send", "msg", q.message)
