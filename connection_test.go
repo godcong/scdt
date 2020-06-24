@@ -17,10 +17,11 @@ func servListen() {
 }
 
 func init() {
-	go servListen()
+
 }
 
 func TestConnImpl_MessageCallback(t *testing.T) {
+	go servListen()
 	for i := 0; i < 10; i++ {
 		dial, err := reuse.Dial("tcp", "", "localhost:12345")
 		if err != nil {

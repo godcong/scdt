@@ -25,7 +25,6 @@ const (
 	MessageConnectID
 	MessageDataTransfer
 	MessageUserCustom
-	c
 )
 
 type Message struct {

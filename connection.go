@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"fmt"
 	"math"
 	"net"
 	"sync"
@@ -95,7 +94,6 @@ func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
 	return NewConn(conn, cfs...)
 }
 func (c *connImpl) Wait() {
-
 	<-c.closed
 	close(c.closed)
 	c.closed = nil
@@ -117,6 +115,7 @@ func (c *connImpl) recv() {
 			if err != nil {
 				panic(err)
 			}
+			log.Infow("recv", "msg", msg)
 			go c.doRecv(&msg)
 		}
 	}
@@ -149,7 +148,7 @@ func (c *connImpl) send() {
 			}
 
 		case q := <-c.sendQueue:
-			fmt.Printf("send:%+v\n", q)
+			log.Infow("send", "msg", q.message)
 			c.addCallback(q)
 			err = c.sendMessage(q.message)
 			if err != nil {
@@ -179,6 +178,7 @@ func (c *connImpl) addCallback(queue *Queue) {
 }
 
 func (c *connImpl) Close() {
+	log.Infow("close")
 	if c.cancel != nil {
 		c.cancel()
 		c.cancel = nil
@@ -227,7 +227,7 @@ func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) 
 }
 func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	id := v.(string)
-	fmt.Println("local id is", id)
+	log.Infow("local", "id", id)
 	msg = NewRecvMessage(src.MessageID)
 	msg.SetDataString(id)
 	return
@@ -238,7 +238,7 @@ func (c *connImpl) recvRequest(msg *Message) {
 	if !b {
 		return
 	}
-	fmt.Printf("recv:%+v\n", msg)
+
 	//ignore error
 	newMsg, _ := f(msg, c.localID)
 	newMsg.Session = msg.Session
@@ -280,11 +280,11 @@ func dataScan(conn net.Conn) *bufio.Scanner {
 		if !atEOF && data[0] == 'v' {
 			if len(data) > 12 {
 				length := uint64(0)
-				err := binary.Read(bytes.NewReader(data[4:12]), binary.BigEndian, &length)
+				err := binary.Read(bytes.NewReader(data[8:16]), binary.BigEndian, &length)
 				if err != nil {
 					return 0, nil, err
 				}
-				length += 28
+				length += 20
 				if int(length) <= len(data) {
 					return int(length), data[:int(length)], nil
 				}
