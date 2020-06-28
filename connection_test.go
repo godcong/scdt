@@ -40,11 +40,14 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 			}
 			connect := Connect(dial)
 			log.Infow("request remote id", "local", connect.LocalID())
-			id, err := connect.RemoteID()
-			if err != nil {
-				t.Fatal(err)
+			for {
+				id, err := connect.RemoteID()
+				if err != nil {
+					t.Fatal(err)
+				}
+				fmt.Println("local id", connect.LocalID(), "remote id", id)
 			}
-			fmt.Println("local id", connect.LocalID(), "remote id", id)
+
 		}()
 	}
 	wg.Wait()
