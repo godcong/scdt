@@ -3,17 +3,27 @@ package scdt
 import (
 	l "github.com/goextension/log"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var log l.Logger
 
+// logLevel ...
+var logLevel = zapcore.DebugLevel
+
 func init() {
-	logger, e := zap.NewProduction(
+	cfg := zap.NewProductionConfig()
+	level := zap.NewAtomicLevel()
+	level.SetLevel(logLevel)
+	cfg.Level = level
+	cfg.OutputPaths = []string{"stdout"}
+	cfg.ErrorOutputPaths = []string{"stderr"}
+	logger, e := cfg.Build(
 		zap.AddCaller(),
+		//zap.AddCallerSkip(1),
 	)
 	if e != nil {
 		panic(e)
 	}
-	l.Register(logger.Sugar())
-	log = l.Log()
+	log = logger.Sugar()
 }
