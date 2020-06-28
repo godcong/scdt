@@ -48,6 +48,18 @@ func (l *listener) getConn(id string) (Connection, error) {
 	return connection, nil
 }
 
+// RangeConnections ...
+func (l *listener) RangeConnections(f func(id string, connection Connection)) {
+	l.conns.Range(func(key, value interface{}) bool {
+		connection, valueB := value.(Connection)
+		id, keyB := key.(string)
+		if valueB && keyB {
+			f(id, connection)
+		}
+		return false
+	})
+}
+
 // SendTo ...
 func (l *listener) SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) bool {
 	conn, err := l.getConn(id)

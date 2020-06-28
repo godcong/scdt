@@ -11,6 +11,12 @@ l, err := NewListener("0.0.0.0:12345")
 if err != nil {
     panic(err)
 }
+
+//send some data to client and wait success
+id:=UUID()
+l.SendTo(id, []byte("hello"), func(id string, message *Message){
+callback})
+
 //wait
 time.Sleep(30*time.Minute)
 //stop
