@@ -94,9 +94,9 @@ func NewListener(addr string) (Listener, error) {
 		return nil, err
 	}
 
-	pool, err := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithNonblocking(false))
-	if err != nil {
-		return nil, err
+	pool, poolErr := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithNonblocking(false))
+	if poolErr != nil {
+		return nil, poolErr
 	}
 	ctx, cancel := context.WithCancel(context.TODO())
 	lis := &listener{
