@@ -225,7 +225,8 @@ func (c *connImpl) SendCustomData(id CustomID, data []byte) (*Queue, bool) {
 // Send ...
 func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool) {
 	queue := CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(cb)
-	return queue, queue.Send(c.sendQueue)
+	b := queue.Send(c.sendQueue)
+	return queue, b
 }
 
 // Send ...
@@ -246,7 +247,8 @@ func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
 // Send ...
 func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) (*Queue, bool) {
 	queue := CallbackQueue(NewRecvMessage(MessageDataTransfer).SetData(data)).SetSendCallback(cb)
-	return queue, queue.Send(c.sendQueue)
+	b := queue.Send(c.sendQueue)
+	return queue, b
 }
 
 // Send ...
