@@ -24,6 +24,8 @@ type listener struct {
 	recvFunc HandleRecvFunc
 }
 
+var defaultGCTimer = time.NewTicker(30 * time.Second)
+
 // Stop ...
 func (l *listener) Stop() error {
 	if l.cancel != nil {
@@ -103,7 +105,7 @@ func NewListener(addr string) (Listener, error) {
 		listener: l,
 		pool:     pool,
 		conns:    new(sync.Map),
-		gcTicker: time.NewTicker(30 * time.Second),
+		gcTicker: defaultGCTimer,
 	}
 
 	go lis.gc()
