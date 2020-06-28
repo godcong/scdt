@@ -19,7 +19,7 @@ l.Stop()
 
 client
 ```go
-dial, err := reuse.Dial("tcp", addr.String(), "localhost:12345")
+dial, err := net.Dial("tcp", "localhost:12345")
 if err != nil {
     log.Errorw("dail error", "err", err)
 }

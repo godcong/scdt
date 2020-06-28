@@ -33,6 +33,7 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
 			dial, err := reuse.Dial("tcp", addr.String(), "localhost:12345")
 			if err != nil {
 				log.Errorw("dail error", "err", err)
