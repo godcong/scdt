@@ -20,6 +20,7 @@ type connImpl struct {
 	fn            MessageCallbackFunc
 	cfg           *Config
 	localID       string
+	recvCallback  RecvCallbackFunc
 	remoteID      *atomic.String
 	conn          net.Conn
 	hbCheck       *time.Timer
@@ -29,6 +30,9 @@ type connImpl struct {
 	sendQueue     chan *Queue
 	closed        *atomic.Bool
 }
+
+// RecvCallbackFunc ...
+type RecvCallbackFunc func(id CustomID, data []byte) ([]byte, error)
 
 var defaultConnSendTimeout = 30 * time.Second
 
@@ -212,6 +216,11 @@ func (c *connImpl) SendWithCallback(id CustomID, data []byte, cb func(message *M
 // Send ...
 func (c *connImpl) Send(id CustomID, data []byte) bool {
 	return c.SendWithCallback(id, data, nil)
+}
+
+// Send ...
+func (c *connImpl) Recv(fn RecvCallbackFunc) {
+	c.recvCallback = fn
 }
 
 // Close ...
