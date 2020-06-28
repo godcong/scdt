@@ -49,12 +49,29 @@ func (l *listener) getConn(id string) (Connection, error) {
 }
 
 // SendTo ...
-func (l *listener) SendTo(id string, data []byte, f func(message *Message)) bool {
+func (l *listener) SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) bool {
 	conn, err := l.getConn(id)
 	if err != nil {
 		return false
 	}
-	return conn.SendWithCallback(data, f)
+	return conn.SendCustomDataWithCallback(cid, data, func(message *Message) {
+		if f != nil {
+			f(id, message)
+		}
+	})
+}
+
+// SendTo ...
+func (l *listener) SendTo(id string, data []byte, f func(id string, message *Message)) bool {
+	conn, err := l.getConn(id)
+	if err != nil {
+		return false
+	}
+	return conn.SendWithCallback(data, func(message *Message) {
+		if f != nil {
+			f(id, message)
+		}
+	})
 }
 
 // HandleRecv ...
