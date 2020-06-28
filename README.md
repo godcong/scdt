@@ -15,8 +15,17 @@ if err != nil {
 //send some data to client and wait success
 l.RangeConnections(f func(id string, connection Connection){
     l.SendTo(id, []byte("hello"), func(id string, message *Message){
-         //do something
+        //do something
     })
+
+    l.SendTo(id, []byte("hello"), func(id string, message *Message){
+        //do something
+    })
+
+    l.SendCustomTo(id, 0x02, []byte("hello"), f func(id string, message *Message){
+        //do something 
+    }) 
+
 }) 
 
 //wait
