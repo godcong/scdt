@@ -125,6 +125,7 @@ func (m Message) Pack(writer io.Writer) (err error) {
 
 // SetCustomID ...
 func (m *Message) SetCustomID(id CustomID) *Message {
+	m.MessageID = MessageUserCustom
 	m.CustomID = id
 	return m
 }
