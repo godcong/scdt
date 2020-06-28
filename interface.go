@@ -18,9 +18,9 @@ type Connection interface {
 	Close()
 	IsClosed() bool
 	Recv(fn RecvCallbackFunc)
-	SendOnWait(id CustomID, data []byte) (*Message, bool)
-	SendWithCallback(id CustomID, data []byte, cb func(message *Message)) bool
-	Send(id CustomID, data []byte) bool
+	SendOnWait(data []byte) (*Message, bool)
+	SendWithCallback(data []byte, cb func(message *Message)) bool
+	Send(data []byte) bool
 }
 
 // SendCallback ...

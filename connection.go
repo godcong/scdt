@@ -203,32 +203,52 @@ func (c *connImpl) addCallback(queue *Queue) {
 		return
 	}
 	s := c.newSession()
-	log.Infow("add callback", "session", s)
 	queue.SetSession(s)
 	c.callbackStore.Store(s, queue.Trigger)
 }
 
 // SendOnWait ...
-func (c *connImpl) SendOnWait(id CustomID, data []byte) (*Message, bool) {
-	var msg *Message
+func (c *connImpl) SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	sent := CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(func(message *Message) {
+	b = CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(func(message *Message) {
 		msg = message
 		wg.Done()
 	}).Send(c.sendQueue)
 	wg.Wait()
-	return msg, sent
+	return
 }
 
 // Send ...
-func (c *connImpl) SendWithCallback(id CustomID, data []byte, cb func(message *Message)) bool {
+func (c *connImpl) SendCustomData(id CustomID, data []byte) bool {
+	return c.SendCustomDataWithCallback(id, data, nil)
+}
+
+// Send ...
+func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) bool {
 	return CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(cb).Send(c.sendQueue)
 }
 
 // Send ...
-func (c *connImpl) Send(id CustomID, data []byte) bool {
-	return c.SendWithCallback(id, data, nil)
+func (c *connImpl) Send(data []byte) bool {
+	return c.SendWithCallback(data, nil)
+}
+
+// SendOnWait ...
+func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	b = c.SendWithCallback(data, func(message *Message) {
+		msg = message
+		wg.Done()
+	})
+	wg.Wait()
+	return
+}
+
+// Send ...
+func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) bool {
+	return CallbackQueue(NewRecvMessage(MessageDataTransfer).SetData(data)).SetSendCallback(cb).Send(c.sendQueue)
 }
 
 // Send ...
@@ -302,12 +322,16 @@ func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Messag
 func (c *connImpl) recvRequest(msg *Message) {
 	f, b := recvReqFunc[msg.MessageID]
 	var newMsg *Message
+	var err error
 	//ignore error
 	if !b && msg.MessageID == MessageUserCustom {
-		newMsg, _ = recvCustomRequest(msg, c.recvCallback)
+		newMsg, err = recvCustomRequest(msg, c.recvCallback)
 	} else if b {
-		newMsg, _ = f(msg, c.localID)
+		newMsg, err = f(msg, c.localID)
 	} else {
+		return
+	}
+	if err != nil {
 		return
 	}
 	newMsg.MessageID = msg.MessageID
