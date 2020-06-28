@@ -11,6 +11,7 @@ type Listener interface {
 	HandleRecv(fn HandleRecvFunc)
 	SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) bool
 	SendTo(id string, data []byte, f func(id string, message *Message)) bool
+	RangeConnections(f func(id string, connection Connection))
 }
 
 // Connection ...
