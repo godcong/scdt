@@ -209,46 +209,44 @@ func (c *connImpl) addCallback(queue *Queue) {
 
 // SendOnWait ...
 func (c *connImpl) SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool) {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	b = CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(func(message *Message) {
-		msg = message
-		wg.Done()
-	}).Send(c.sendQueue)
-	wg.Wait()
+	queue := CallbackQueue(NewCustomMessage(id, data))
+	if queue.Send(c.sendQueue) {
+		msg = queue.Wait()
+		b = true
+	}
 	return
 }
 
 // Send ...
-func (c *connImpl) SendCustomData(id CustomID, data []byte) bool {
+func (c *connImpl) SendCustomData(id CustomID, data []byte) (*Queue, bool) {
 	return c.SendCustomDataWithCallback(id, data, nil)
 }
 
 // Send ...
-func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) bool {
-	return CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(cb).Send(c.sendQueue)
+func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool) {
+	queue := CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(cb)
+	return queue, queue.Send(c.sendQueue)
 }
 
 // Send ...
-func (c *connImpl) Send(data []byte) bool {
+func (c *connImpl) Send(data []byte) (*Queue, bool) {
 	return c.SendWithCallback(data, nil)
 }
 
 // SendOnWait ...
 func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	b = c.SendWithCallback(data, func(message *Message) {
-		msg = message
-		wg.Done()
-	})
-	wg.Wait()
+	queue := CallbackQueue(NewRecvMessage(MessageDataTransfer).SetData(data))
+	if queue.Send(c.sendQueue) {
+		msg = queue.Wait()
+		b = true
+	}
 	return
 }
 
 // Send ...
-func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) bool {
-	return CallbackQueue(NewRecvMessage(MessageDataTransfer).SetData(data)).SetSendCallback(cb).Send(c.sendQueue)
+func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) (*Queue, bool) {
+	queue := CallbackQueue(NewRecvMessage(MessageDataTransfer).SetData(data)).SetSendCallback(cb)
+	return queue, queue.Send(c.sendQueue)
 }
 
 // Send ...

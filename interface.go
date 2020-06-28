@@ -9,8 +9,8 @@ type MessageCallbackFunc func(data []byte)
 type Listener interface {
 	Stop() error
 	HandleRecv(fn HandleRecvFunc)
-	SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) bool
-	SendTo(id string, data []byte, f func(id string, message *Message)) bool
+	SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) (*Queue, bool)
+	SendTo(id string, data []byte, f func(id string, message *Message)) (*Queue, bool)
 	RangeConnections(f func(id string, connection Connection))
 }
 
@@ -22,12 +22,12 @@ type Connection interface {
 	Close()
 	IsClosed() bool
 	Recv(fn RecvCallbackFunc)
-	SendCustomData(id CustomID, data []byte) bool
+	SendCustomData(id CustomID, data []byte) (*Queue, bool)
 	SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool)
-	SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) bool
-	Send(data []byte) bool
+	SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool)
+	Send(data []byte) (*Queue, bool)
 	SendOnWait(data []byte) (*Message, bool)
-	SendWithCallback(data []byte, cb func(message *Message)) bool
+	SendWithCallback(data []byte, cb func(message *Message)) (*Queue, bool)
 }
 
 // SendCallback ...

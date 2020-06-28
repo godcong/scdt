@@ -62,10 +62,10 @@ func (l *listener) RangeConnections(f func(id string, connection Connection)) {
 }
 
 // SendTo ...
-func (l *listener) SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) bool {
+func (l *listener) SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) (*Queue, bool) {
 	conn, err := l.getConn(id)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	return conn.SendCustomDataWithCallback(cid, data, func(message *Message) {
 		if f != nil {
@@ -75,10 +75,10 @@ func (l *listener) SendCustomTo(id string, cid CustomID, data []byte, f func(id 
 }
 
 // SendTo ...
-func (l *listener) SendTo(id string, data []byte, f func(id string, message *Message)) bool {
+func (l *listener) SendTo(id string, data []byte, f func(id string, message *Message)) (*Queue, bool) {
 	conn, err := l.getConn(id)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	return conn.SendWithCallback(data, func(message *Message) {
 		if f != nil {
