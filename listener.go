@@ -60,6 +60,10 @@ func (l *listener) listen() {
 			if err != nil {
 				return
 			}
+			c.Recv(func(id CustomID, data []byte) ([]byte, error) {
+				log.Infow("custom recv", "id", id, "data", string(data))
+				return []byte("server say hello to you"), nil
+			})
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
 				time.Sleep(15 * time.Second)

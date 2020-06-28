@@ -272,7 +272,6 @@ func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) 
 func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	id := v.(string)
 	msg = NewSendMessage(src.MessageID, toBytes(id))
-	msg.Session = src.Session
 	log.Debugw("local", "id", id, "src", src, "target", msg)
 	return
 }
@@ -298,8 +297,9 @@ func (c *connImpl) recvRequest(msg *Message) {
 	} else {
 		return
 	}
-
+	newMsg.MessageID = msg.MessageID
 	newMsg.Session = msg.Session
+	newMsg.CustomID = msg.CustomID
 	DefaultQueue(newMsg).Send(c.sendQueue)
 }
 

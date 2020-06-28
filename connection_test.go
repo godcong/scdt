@@ -46,6 +46,13 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 					t.Fatal(err)
 				}
 				fmt.Println("local id", connect.LocalID(), "remote id", id)
+				connect.SendWithCallback(0x01, []byte("hello"), func(message *Message) {
+					fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
+				})
+				connect.Recv(func(id CustomID, data []byte) ([]byte, error) {
+					fmt.Printf("recv message:%+v,data:%s\n", id, data)
+					return nil, nil
+				})
 			}
 
 		}()
