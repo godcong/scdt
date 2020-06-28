@@ -32,7 +32,7 @@ type connImpl struct {
 }
 
 // RecvCallbackFunc ...
-type RecvCallbackFunc func(message *Message) ([]byte, error)
+type RecvCallbackFunc func(message *Message) ([]byte, bool)
 
 var defaultConnSendTimeout = 30 * time.Second
 
@@ -292,9 +292,9 @@ func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Messag
 	if callbackFunc == nil {
 		return NewCustomMessage(src.CustomID, nil), nil
 	}
-	data, err := callbackFunc(src)
-	if err != nil {
-		return nil, err
+	data, b := callbackFunc(src)
+	if !b {
+		return nil, errors.New("do not need response")
 	}
 	return NewCustomMessage(src.CustomID, data), nil
 }
