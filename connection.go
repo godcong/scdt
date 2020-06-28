@@ -257,13 +257,9 @@ var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message,
 	MessageDataTransfer: recvRequestDataTransfer,
 	MessageHeartBeat:    recvRequestHearBeat,
 	MessageConnectID:    recvRequestID,
-	MessageUserCustom:   recvRequest,
+	//MessageUserCustom:   recvRequest,
 }
 
-func recvRequest(src *Message, v interface{}) (msg *Message, err error) {
-	msg = NewSendMessage(src.MessageID, nil)
-	return
-}
 func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err error) {
 	msg = NewSendMessage(src.MessageID, nil)
 	return
@@ -280,15 +276,29 @@ func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	log.Debugw("local", "id", id, "src", src, "target", msg)
 	return
 }
+func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Message, err error) {
+	if callbackFunc == nil {
+		return NewCustomMessage(src.CustomID, nil), nil
+	}
+	data, err := callbackFunc(src.CustomID, src.Data)
+	if err != nil {
+		return nil, err
+	}
+	return NewCustomMessage(src.CustomID, data), nil
+}
 
 func (c *connImpl) recvRequest(msg *Message) {
 	f, b := recvReqFunc[msg.MessageID]
-	if !b {
+	var newMsg *Message
+	//ignore error
+	if !b && msg.MessageID == MessageUserCustom {
+		newMsg, _ = recvCustomRequest(msg, c.recvCallback)
+	} else if b {
+		newMsg, _ = f(msg, c.localID)
+	} else {
 		return
 	}
 
-	//ignore error
-	newMsg, _ := f(msg, c.localID)
 	newMsg.Session = msg.Session
 	DefaultQueue(newMsg).Send(c.sendQueue)
 }
@@ -298,14 +308,14 @@ func (c *connImpl) recvResponse(msg *Message) {
 		c.hbCheck.Reset(c.cfg.Timeout)
 		return
 	}
-	trigger, b := c.GetCallback(msg.Session)
+	trigger, b := c.getCallback(msg.Session)
 	if b {
 		trigger(msg)
 	}
 }
 
-// GetCallback ...
-func (c *connImpl) GetCallback(session Session) (f func(message *Message), b bool) {
+// getCallback ...
+func (c *connImpl) getCallback(session Session) (f func(message *Message), b bool) {
 	if session == 0 {
 		return
 	}
