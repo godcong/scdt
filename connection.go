@@ -205,8 +205,13 @@ func (c *connImpl) addCallback(queue *Queue) {
 }
 
 // Send ...
-func (c *connImpl) Send(id CustomID, data []byte) (SendCallback, error) {
-	NewCustomMessage(id)
+func (c *connImpl) SendWithCallback(id CustomID, data []byte, cb func(message *Message)) bool {
+	return CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(cb).Send(c.sendQueue)
+}
+
+// Send ...
+func (c *connImpl) Send(id CustomID, data []byte) bool {
+	return c.SendWithCallback(id, data, nil)
 }
 
 // Close ...
