@@ -9,6 +9,8 @@ type MessageCallbackFunc func(data []byte)
 type Listener interface {
 	Stop() error
 	HandleRecv(fn HandleRecvFunc)
+	SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) bool
+	SendTo(id string, data []byte, f func(id string, message *Message)) bool
 }
 
 // Connection ...
