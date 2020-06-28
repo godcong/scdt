@@ -8,6 +8,7 @@ type MessageCallbackFunc func(data []byte)
 // Listener ...
 type Listener interface {
 	Stop() error
+	HandleRecv(fn HandleRecvFunc)
 }
 
 // Connection ...

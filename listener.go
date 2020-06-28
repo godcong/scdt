@@ -2,6 +2,7 @@ package scdt
 
 import (
 	"context"
+	"errors"
 	"net"
 	"runtime"
 	"sync"
@@ -33,6 +34,27 @@ func (l *listener) Stop() error {
 		l.cancel = nil
 	}
 	return nil
+}
+
+func (l *listener) getConn(id string) (Connection, error) {
+	load, ok := l.conns.Load(id)
+	if !ok {
+		return nil, errors.New("connection id was unsupported")
+	}
+	connection, b := load.(Connection)
+	if b {
+		return nil, errors.New("failed transfer to Connection")
+	}
+	return connection, nil
+}
+
+// SendTo ...
+func (l *listener) SendTo(id string, data []byte, f func(message *Message)) bool {
+	conn, err := l.getConn(id)
+	if err != nil {
+		return false
+	}
+	return conn.SendWithCallback(data, f)
 }
 
 // HandleRecv ...
