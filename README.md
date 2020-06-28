@@ -13,9 +13,11 @@ if err != nil {
 }
 
 //send some data to client and wait success
-id:=UUID()
-l.SendTo(id, []byte("hello"), func(id string, message *Message){
-callback})
+l.RangeConnections(f func(id string, connection Connection){
+    l.SendTo(id, []byte("hello"), func(id string, message *Message){
+         //do something
+    })
+}) 
 
 //wait
 time.Sleep(30*time.Minute)
