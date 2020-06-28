@@ -19,6 +19,7 @@ type listener struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	listener net.Listener
+	id       string
 	pool     *ants.Pool
 	gcTicker *time.Ticker
 	conns    *sync.Map
@@ -106,7 +107,7 @@ func (l *listener) gc() {
 }
 
 func (l *listener) listen() {
-	myid := UUID()
+	l.id = UUID()
 	for {
 		conn, err := l.listener.Accept()
 		if err != nil {
@@ -115,7 +116,7 @@ func (l *listener) listen() {
 		l.pool.Submit(func() {
 			c := Accept(conn, func(c *Config) {
 				c.CustomIDer = func() string {
-					return myid
+					return l.id
 				}
 			})
 			id, err := c.RemoteID()
