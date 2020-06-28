@@ -124,20 +124,23 @@ func (m Message) Pack(writer io.Writer) (err error) {
 }
 
 // SetCustomID ...
-func (m *Message) SetCustomID(id CustomID) {
+func (m *Message) SetCustomID(id CustomID) *Message {
 	m.CustomID = id
+	return m
 }
 
 // SetDataString ...
-func (m *Message) SetDataString(data string) {
+func (m *Message) SetDataString(data string) *Message {
 	m.Data = []byte(data)
 	m.DataLength = DataLength(len(m.Data))
+	return m
 }
 
 // SetData ...
-func (m *Message) SetData(data []byte) {
+func (m *Message) SetData(data []byte) *Message {
 	m.Data = data
 	m.DataLength = DataLength(len(m.Data))
+	return m
 }
 
 // RequestType ...
@@ -146,6 +149,7 @@ func (m *Message) RequestType() RequestType {
 }
 
 // SetRequestType ...
-func (m *Message) SetRequestType(requestType RequestType) {
+func (m *Message) SetRequestType(requestType RequestType) *Message {
 	m.requestType = requestType
+	return m
 }
