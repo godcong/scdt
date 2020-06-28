@@ -11,6 +11,9 @@ import (
 	"github.com/portmapping/go-reuse"
 )
 
+// HandleRecvFunc ...
+type HandleRecvFunc func(id string, message *Message) ([]byte, bool)
+
 type listener struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -18,6 +21,7 @@ type listener struct {
 	pool     *ants.Pool
 	gcTicker *time.Ticker
 	conns    *sync.Map
+	recvFunc HandleRecvFunc
 }
 
 // Stop ...
@@ -27,6 +31,11 @@ func (l *listener) Stop() error {
 		l.cancel = nil
 	}
 	return nil
+}
+
+// HandleRecv ...
+func (l *listener) HandleRecv(fn HandleRecvFunc) {
+	l.recvFunc = fn
 }
 
 func (l *listener) gc() {
@@ -60,9 +69,11 @@ func (l *listener) listen() {
 			if err != nil {
 				return
 			}
-			c.Recv(func(message *Message) ([]byte, error) {
-				log.Infow("custom recv", "id", id, "data", string(message.Data))
-				return []byte("server say hello to you"), nil
+			c.Recv(func(message *Message) ([]byte, bool) {
+				if l.recvFunc != nil {
+					return l.recvFunc(id, message)
+				}
+				return nil, false
 			})
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
