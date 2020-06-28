@@ -81,8 +81,20 @@ func NewRecvMessage(id MessageID) *Message {
 	}
 }
 
-// NewCustomMessage ...
-func NewCustomMessage(id CustomID, data []byte) *Message {
+// NewCustomSendMessage ...
+func NewCustomSendMessage(id CustomID, data []byte) *Message {
+	return &Message{
+		version:     Version{'v', 0, 0, 1},
+		requestType: RequestTypeSend,
+		MessageID:   MessageUserCustom,
+		CustomID:    id,
+		Data:        data,
+		DataLength:  Length(data),
+	}
+}
+
+// NewCustomRecvMessage ...
+func NewCustomRecvMessage(id CustomID, data []byte) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeRecv,

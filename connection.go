@@ -209,7 +209,7 @@ func (c *connImpl) addCallback(queue *Queue) {
 
 // SendOnWait ...
 func (c *connImpl) SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool) {
-	queue := CallbackQueue(NewCustomMessage(id, data))
+	queue := CallbackQueue(NewCustomRecvMessage(id, data))
 	if queue.Send(c.sendQueue) {
 		msg = queue.Wait()
 		b = true
@@ -224,7 +224,7 @@ func (c *connImpl) SendCustomData(id CustomID, data []byte) (*Queue, bool) {
 
 // Send ...
 func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool) {
-	queue := CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(cb)
+	queue := CallbackQueue(NewCustomRecvMessage(id, data)).SetSendCallback(cb)
 	b := queue.Send(c.sendQueue)
 	return queue, b
 }
@@ -310,13 +310,13 @@ func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 }
 func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Message, err error) {
 	if callbackFunc == nil {
-		return NewCustomMessage(src.CustomID, nil), nil
+		return NewCustomSendMessage(src.CustomID, nil), nil
 	}
 	data, b := callbackFunc(src)
 	if !b {
 		return nil, errors.New("do not need response")
 	}
-	return NewCustomMessage(src.CustomID, data), nil
+	return NewCustomSendMessage(src.CustomID, data), nil
 }
 
 func (c *connImpl) recvRequest(msg *Message) {
