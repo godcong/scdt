@@ -171,6 +171,10 @@ func (c *connImpl) send() {
 			if err != nil {
 				panic(err)
 			}
+			if q.sendCallback != nil {
+				q.sendCallback(q.message)
+			}
+
 		default:
 			if c.IsClosed() {
 				return
@@ -198,6 +202,11 @@ func (c *connImpl) addCallback(queue *Queue) {
 	log.Infow("add callback", "session", s)
 	queue.SetSession(s)
 	c.callbackStore.Store(s, queue.Trigger)
+}
+
+// Send ...
+func (c *connImpl) Send(id CustomID, data []byte) (SendCallback, error) {
+	NewCustomMessage(id)
 }
 
 // Close ...

@@ -67,7 +67,7 @@ func NewSendMessage(id MessageID, data []byte) *Message {
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeSend,
 		MessageID:   id,
-		DataLength:  DataLength(len(data)),
+		DataLength:  Length(data),
 		Data:        data,
 	}
 }
@@ -82,12 +82,14 @@ func NewRecvMessage(id MessageID) *Message {
 }
 
 // NewCustomMessage ...
-func NewCustomMessage(id CustomID) *Message {
+func NewCustomMessage(id CustomID, data []byte) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeRecv,
 		MessageID:   MessageUserCustom,
 		CustomID:    id,
+		Data:        data,
+		DataLength:  Length(data),
 	}
 }
 
@@ -133,14 +135,14 @@ func (m *Message) SetCustomID(id CustomID) *Message {
 // SetDataString ...
 func (m *Message) SetDataString(data string) *Message {
 	m.Data = []byte(data)
-	m.DataLength = DataLength(len(m.Data))
+	m.DataLength = Length(m.Data)
 	return m
 }
 
 // SetData ...
 func (m *Message) SetData(data []byte) *Message {
 	m.Data = data
-	m.DataLength = DataLength(len(m.Data))
+	m.DataLength = Length(m.Data)
 	return m
 }
 
@@ -153,4 +155,9 @@ func (m *Message) RequestType() RequestType {
 func (m *Message) SetRequestType(requestType RequestType) *Message {
 	m.requestType = requestType
 	return m
+}
+
+// Length ...
+func Length(data []byte) DataLength {
+	return DataLength(len(data))
 }

@@ -6,10 +6,11 @@ var defaultQueueTimeout = 30 * time.Second
 
 // Queue ...
 type Queue struct {
-	message  *Message
-	callback chan *Message
-	timeout  time.Duration
-	session  *Session //link msg.session => session
+	message      *Message
+	callback     chan *Message
+	timeout      time.Duration
+	session      *Session //link msg.session => session
+	sendCallback func(msg *Message)
 }
 
 // Session ...
@@ -61,7 +62,7 @@ func (q *Queue) Timeout() time.Duration {
 	return q.timeout
 }
 
-// SetTimeout ...
+// SetTimeout set timeout with time duration
 func (q *Queue) SetTimeout(timeout time.Duration) {
 	q.timeout = timeout
 }
@@ -82,6 +83,12 @@ func (q *Queue) Send(out chan<- *Queue) bool {
 	}
 }
 
+// SetSendCallback ...
+func (q *Queue) SetSendCallback(f func(message *Message)) *Queue {
+	q.sendCallback = f
+	return q
+}
+
 // DefaultQueue ...
 func DefaultQueue(msg *Message) *Queue {
 	return &Queue{
@@ -93,9 +100,10 @@ func DefaultQueue(msg *Message) *Queue {
 // CallbackQueue ...
 func CallbackQueue(msg *Message) *Queue {
 	return &Queue{
-		callback: make(chan *Message),
-		timeout:  defaultQueueTimeout,
-		session:  &msg.Session,
-		message:  msg,
+		callback:     make(chan *Message),
+		sendCallback: nil,
+		timeout:      defaultQueueTimeout,
+		session:      &msg.Session,
+		message:      msg,
 	}
 }
