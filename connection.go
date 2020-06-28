@@ -127,7 +127,6 @@ func (c *connImpl) recv() {
 	}()
 	scan := dataScan(c.conn)
 	for scan.Scan() {
-		log.Infow("recv running")
 		select {
 		case <-c.ctx.Done():
 			return
@@ -203,13 +202,14 @@ func (c *connImpl) addCallback(queue *Queue) {
 
 // Close ...
 func (c *connImpl) Close() {
-	log.Infow("close")
+	log.Debugw("close")
 	if c.cancel != nil {
 		c.cancel()
 		c.cancel = nil
 	}
 	if c.conn != nil {
 		c.conn.Close()
+		c.conn = nil
 	}
 	c.hbCheck.Reset(0)
 
@@ -225,7 +225,7 @@ func (c *connImpl) doRecv(msg *Message) {
 	case RequestTypeSend:
 		c.recvResponse(msg)
 	default:
-		c.Close()
+		panic("unsupported request type")
 		return
 	}
 }
