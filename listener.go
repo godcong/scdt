@@ -20,6 +20,7 @@ type listener struct {
 	conns    *sync.Map
 }
 
+// Stop ...
 func (l *listener) Stop() error {
 	if l.cancel != nil {
 		l.cancel()
@@ -69,6 +70,7 @@ func (l *listener) listen() {
 	}
 }
 
+// NewListener ...
 func NewListener(addr string) (Listener, error) {
 	l, err := reuse.Listen("tcp", addr)
 	if err != nil {

@@ -5,29 +5,52 @@ import (
 	"io"
 )
 
-type RequestType uint8    //2
-type MessageID uint8      //2
-type CustomID uint8       //2
-type RequestStatus uint32 //4
-type Session uint32       //4
-type DataLength uint64    //8
-type SumLength uint16     //2
-type Extension uint16     //2
+// RequestType ...
+type RequestType uint8
+
+// MessageID ...
+type MessageID uint8
+
+// CustomID ...
+type CustomID uint8
+
+// RequestStatus ...
+type RequestStatus uint32
+
+// Session ...
+type Session uint32
+
+// DataLength ...
+type DataLength uint64
+
+// SumLength ...
+type SumLength uint16
+
+// Extension ...
+type Extension uint16
 
 // Version //4
 const (
-	RequestTypeRecv   RequestType = 0x00
-	RequestTypeSend   RequestType = 0x01
+	// RequestTypeRecv ...
+	RequestTypeRecv RequestType = 0x00
+	// RequestTypeSend ...
+	RequestTypeSend RequestType = 0x01
+	// RequestTypeFailed ...
 	RequestTypeFailed RequestType = 0x02
 )
 
 const (
+	// MessageHeartBeat ...
 	MessageHeartBeat MessageID = iota
+	// MessageConnectID ...
 	MessageConnectID
+	// MessageDataTransfer ...
 	MessageDataTransfer
+	// MessageUserCustom ...
 	MessageUserCustom
 )
 
+// Message ...
 type Message struct {
 	version     Version
 	requestType RequestType
@@ -38,6 +61,7 @@ type Message struct {
 	Data        []byte
 }
 
+// NewSendMessage ...
 func NewSendMessage(id MessageID, data []byte) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
@@ -48,6 +72,7 @@ func NewSendMessage(id MessageID, data []byte) *Message {
 	}
 }
 
+// NewRecvMessage ...
 func NewRecvMessage(id MessageID) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
@@ -56,6 +81,17 @@ func NewRecvMessage(id MessageID) *Message {
 	}
 }
 
+// NewCustomMessage ...
+func NewCustomMessage(id CustomID) *Message {
+	return &Message{
+		version:     Version{'v', 0, 0, 1},
+		requestType: RequestTypeRecv,
+		MessageID:   MessageUserCustom,
+		CustomID:    id,
+	}
+}
+
+// Unpack ...
 func (m *Message) Unpack(reader io.Reader) (err error) {
 	var v []interface{}
 	v = append(v, &m.version, &m.requestType, &m.MessageID, &m.CustomID, &m.DataLength, &m.Session)
@@ -87,16 +123,29 @@ func (m Message) Pack(writer io.Writer) (err error) {
 	return nil
 }
 
+// SetCustomID ...
 func (m *Message) SetCustomID(id CustomID) {
 	m.CustomID = id
 }
 
+// SetDataString ...
 func (m *Message) SetDataString(data string) {
 	m.Data = []byte(data)
 	m.DataLength = DataLength(len(m.Data))
 }
 
+// SetData ...
 func (m *Message) SetData(data []byte) {
 	m.Data = data
 	m.DataLength = DataLength(len(m.Data))
+}
+
+// RequestType ...
+func (m *Message) RequestType() RequestType {
+	return m.requestType
+}
+
+// SetRequestType ...
+func (m *Message) SetRequestType(requestType RequestType) {
+	m.requestType = requestType
 }

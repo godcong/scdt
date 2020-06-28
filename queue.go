@@ -12,10 +12,12 @@ type Queue struct {
 	session  *Session //link msg.session => session
 }
 
+// Session ...
 func (q *Queue) Session() Session {
 	return q.message.Session
 }
 
+// SetSession ...
 func (q *Queue) SetSession(session Session) {
 	if session == 0 || q.session == nil {
 		return
@@ -23,10 +25,12 @@ func (q *Queue) SetSession(session Session) {
 	*q.session = session
 }
 
+// NeedCallback ...
 func (q *Queue) NeedCallback() bool {
 	return q.callback != nil
 }
 
+// Trigger ...
 func (q *Queue) Trigger(message *Message) {
 	if q.callback != nil {
 		t := time.NewTimer(q.timeout)
@@ -52,14 +56,17 @@ func (q *Queue) Wait() *Message {
 	return nil
 }
 
+// Timeout ...
 func (q *Queue) Timeout() time.Duration {
 	return q.timeout
 }
 
+// SetTimeout ...
 func (q *Queue) SetTimeout(timeout time.Duration) {
 	q.timeout = timeout
 }
 
+// Send ...
 func (q *Queue) Send(out chan<- *Queue) bool {
 	if out == nil {
 		return false
@@ -75,7 +82,7 @@ func (q *Queue) Send(out chan<- *Queue) bool {
 	}
 }
 
-// NewQueue ...
+// DefaultQueue ...
 func DefaultQueue(msg *Message) *Queue {
 	return &Queue{
 		timeout: defaultQueueTimeout,
@@ -83,6 +90,7 @@ func DefaultQueue(msg *Message) *Queue {
 	}
 }
 
+// CallbackQueue ...
 func CallbackQueue(msg *Message) *Queue {
 	return &Queue{
 		callback: make(chan *Message),

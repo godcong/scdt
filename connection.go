@@ -32,6 +32,7 @@ type connImpl struct {
 
 var defaultConnSendTimeout = 30 * time.Second
 
+// IsClosed ...
 func (c *connImpl) IsClosed() bool {
 	if c.closed != nil {
 		return c.closed.Load()
@@ -39,10 +40,12 @@ func (c *connImpl) IsClosed() bool {
 	return true
 }
 
+// LocalID ...
 func (c *connImpl) LocalID() string {
 	return c.localID
 }
 
+// RemoteID ...
 func (c *connImpl) RemoteID() (id string, err error) {
 	id = c.remoteID.Load()
 	if id == "" {
@@ -63,10 +66,12 @@ func (c *connImpl) RemoteID() (id string, err error) {
 	return id, nil
 }
 
+// MessageCallback ...
 func (c *connImpl) MessageCallback(fn MessageCallbackFunc) {
 	c.fn = fn
 }
 
+// NewConn ...
 func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 	cfg := defaultConfig()
 	for _, cf := range cfs {
@@ -96,12 +101,12 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 	return runConnection(impl)
 }
 
-// AcceptNode ...
+// Accept ...
 func Accept(conn net.Conn, cfs ...ConfigFunc) Connection {
 	return NewConn(conn, cfs...)
 }
 
-// ConnectNode ...
+// Connect ...
 func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
 	tmp := []ConfigFunc{func(c *Config) {
 		c.Timeout = 30 * time.Second
@@ -196,6 +201,7 @@ func (c *connImpl) addCallback(queue *Queue) {
 	c.callbackStore.Store(s, queue.Trigger)
 }
 
+// Close ...
 func (c *connImpl) Close() {
 	log.Infow("close")
 	if c.cancel != nil {
@@ -275,6 +281,7 @@ func (c *connImpl) recvResponse(msg *Message) {
 	}
 }
 
+// GetCallback ...
 func (c *connImpl) GetCallback(session Session) (f func(message *Message), b bool) {
 	if session == 0 {
 		return
