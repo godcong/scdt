@@ -25,7 +25,7 @@ if err != nil {
 }
 connect := Connect(dial)
 //send some data to server and wait success
-msg, b := connect.SendOnWait(0x01, []byte("hello"))
+msg, b := connect.SendOnWait([]byte("hello"))
 if b {
     fmt.Printf("waited send message:%+v,data:%s\n", msg, msg.Data)
 }
