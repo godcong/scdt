@@ -49,8 +49,8 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 				connect.SendWithCallback(0x01, []byte("hello"), func(message *Message) {
 					fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
 				})
-				connect.Recv(func(id CustomID, data []byte) ([]byte, error) {
-					fmt.Printf("recv message:%+v,data:%s\n", id, data)
+				connect.Recv(func(message *Message) ([]byte, error) {
+					fmt.Printf("recv message:%+v,data:%s\n", id, message.Data)
 					return nil, nil
 				})
 			}

@@ -32,7 +32,7 @@ type connImpl struct {
 }
 
 // RecvCallbackFunc ...
-type RecvCallbackFunc func(id CustomID, data []byte) ([]byte, error)
+type RecvCallbackFunc func(message *Message) ([]byte, error)
 
 var defaultConnSendTimeout = 30 * time.Second
 
@@ -208,6 +208,19 @@ func (c *connImpl) addCallback(queue *Queue) {
 	c.callbackStore.Store(s, queue.Trigger)
 }
 
+// SendOnWait ...
+func (c *connImpl) SendOnWait(id CustomID, data []byte) (*Message, bool) {
+	var msg *Message
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	sent := CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(func(message *Message) {
+		msg = message
+		wg.Done()
+	}).Send(c.sendQueue)
+	wg.Wait()
+	return msg, sent
+}
+
 // Send ...
 func (c *connImpl) SendWithCallback(id CustomID, data []byte, cb func(message *Message)) bool {
 	return CallbackQueue(NewCustomMessage(id, data)).SetSendCallback(cb).Send(c.sendQueue)
@@ -279,7 +292,7 @@ func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Messag
 	if callbackFunc == nil {
 		return NewCustomMessage(src.CustomID, nil), nil
 	}
-	data, err := callbackFunc(src.CustomID, src.Data)
+	data, err := callbackFunc(src)
 	if err != nil {
 		return nil, err
 	}
