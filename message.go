@@ -12,7 +12,7 @@ type RequestType uint8
 type MessageID uint8
 
 // CustomID ...
-type CustomID uint8
+type CustomID uint16
 
 // RequestStatus ...
 type RequestStatus uint32
