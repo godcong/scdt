@@ -313,7 +313,8 @@ func (c *connImpl) GetCallback(session Session) (f func(message *Message), b boo
 	load, ok := c.callbackStore.Load(session)
 	if ok {
 		f, b = load.(func(message *Message))
-		log.Infow("callback", "has", b)
+		log.Debugw("callback", "has", b)
+		c.callbackStore.Delete(session)
 	}
 	return
 }
