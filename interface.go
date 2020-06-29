@@ -20,6 +20,7 @@ type Connection interface {
 	RemoteID() (string, error)
 	Close()
 	IsClosed() bool
+	Recv(fn RecvCallbackFunc)
 	RecvCustomData(fn RecvCallbackFunc)
 	SendCustomData(id CustomID, data []byte) (*Queue, bool)
 	SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool)

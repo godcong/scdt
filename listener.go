@@ -129,6 +129,12 @@ func (l *listener) listen() {
 				}
 				return nil, false
 			})
+			c.Recv(func(message *Message) ([]byte, bool) {
+				if l.recvFunc != nil {
+					return l.recvFunc(id, message)
+				}
+				return nil, false
+			})
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
 				time.Sleep(15 * time.Second)
