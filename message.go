@@ -2,6 +2,7 @@ package scdt
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 )
 
@@ -32,11 +33,11 @@ type Extension uint16
 // Version //4
 const (
 	// RequestTypeRecv ...
-	RequestTypeRecv RequestType = 0x00
+	RequestTypeRecv RequestType = iota + 1
 	// RequestTypeSend ...
-	RequestTypeSend RequestType = 0x01
+	RequestTypeSend
 	// RequestTypeFailed ...
-	RequestTypeFailed RequestType = 0x02
+	RequestTypeFailed
 )
 
 const (
@@ -108,6 +109,16 @@ func newCustomRecvMessage(id CustomID, data []byte) *Message {
 	}
 }
 
+func newFailedSendMessage(data []byte) *Message {
+	return &Message{
+		version:     Version{'v', 0, 0, 1},
+		requestType: RequestTypeFailed,
+		MessageID:   MessageRecvFailed,
+		Data:        data,
+		DataLength:  Length(data),
+	}
+}
+
 // Unpack ...
 func (m *Message) Unpack(reader io.Reader) (err error) {
 	var v []interface{}
@@ -170,6 +181,14 @@ func (m *Message) RequestType() RequestType {
 func (m *Message) SetRequestType(requestType RequestType) *Message {
 	m.requestType = requestType
 	return m
+}
+
+// Error ...
+func (m *Message) Error() error {
+	if m.requestType != RequestTypeFailed {
+		return nil
+	}
+	return errors.New(string(m.Data))
 }
 
 // Length ...

@@ -285,6 +285,8 @@ func (c *connImpl) doRecv(msg *Message) {
 		c.recvRequest(msg)
 	case RequestTypeSend:
 		c.recvResponse(msg)
+	case RequestTypeFailed:
+		c.recvFailed(msg)
 	default:
 		panic("unsupported request type")
 		return
@@ -392,6 +394,13 @@ func (c *connImpl) getCallback(session Session) (f func(message *Message), b boo
 		c.callbackStore.Delete(session)
 	}
 	return
+}
+
+func (c *connImpl) recvFailed(msg *Message) {
+	trigger, b := c.getCallback(msg.Session)
+	if b {
+		trigger(msg)
+	}
 }
 
 // ScanExchange ...
