@@ -52,14 +52,31 @@ queue,ok:=connect.SendWithCallback([]byte("hello"), func(message *Message) {
 })
 //send some data to server
 queue,ok:=connect.Send([]byte("hello"))
+if ok {
+    //get the response message
+    msg:=queue.Wait()
+    if msg!=nil{
+        //data was here
+        fmt.Println(string(msg.Data))
+    }   
+}
 
+
+//called when recv some message
+connect.Recv(func(message *Message) ([]byte, error) {
+    fmt.Printf("recv message:%+v,data:%s\n", id, message.Data)
+    return nil, nil
+})
+```
+
+client with custom data
+```go
 //send some data to server with a custom id and wait success callback
 queue,ok:=connect.SendCustomDataWithCallback(0x01,[]byte("hello"), func(message *Message) {
     fmt.Printf("send message:%+v,data:%s\n", message, message.Data)		
 })
-
 //called when recv some message
-connect.Recv(func(message *Message) ([]byte, error) {
+connect.RecvCustomData(func(message *Message) ([]byte, error) {
     fmt.Printf("recv message:%+v,data:%s\n", id, message.Data)
     return nil, nil
 })
