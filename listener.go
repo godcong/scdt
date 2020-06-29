@@ -107,6 +107,15 @@ func (l *listener) gc() {
 	}
 }
 
+func (l *listener) handleRecv(id string) func(message *Message) ([]byte, bool) {
+	return func(message *Message) ([]byte, bool) {
+		if l.recvFunc != nil {
+			return l.recvFunc(id, message)
+		}
+		return nil, false
+	}
+}
+
 func (l *listener) listen() {
 	for {
 		conn, err := l.listener.Accept()
@@ -123,18 +132,9 @@ func (l *listener) listen() {
 			if err != nil {
 				return
 			}
-			c.RecvCustomData(func(message *Message) ([]byte, bool) {
-				if l.recvFunc != nil {
-					return l.recvFunc(id, message)
-				}
-				return nil, false
-			})
-			c.Recv(func(message *Message) ([]byte, bool) {
-				if l.recvFunc != nil {
-					return l.recvFunc(id, message)
-				}
-				return nil, false
-			})
+			c.Recv(l.handleRecv(id))
+			c.RecvCustomData(l.handleRecv(id))
+
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
 				time.Sleep(15 * time.Second)
