@@ -19,6 +19,7 @@ type listener struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	listener net.Listener
+	cfg      *Config
 	id       string
 	pool     *ants.Pool
 	gcTicker *time.Ticker
@@ -107,7 +108,6 @@ func (l *listener) gc() {
 }
 
 func (l *listener) listen() {
-	l.id = UUID()
 	for {
 		conn, err := l.listener.Accept()
 		if err != nil {
@@ -140,7 +140,7 @@ func (l *listener) listen() {
 }
 
 // NewListener ...
-func NewListener(addr string) (Listener, error) {
+func NewListener(addr string, cfs ...ConfigFunc) (Listener, error) {
 	l, err := reuse.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
@@ -151,14 +151,20 @@ func NewListener(addr string) (Listener, error) {
 		return nil, poolErr
 	}
 	ctx, cancel := context.WithCancel(context.TODO())
+	cfg := defaultConfig()
+	for _, cf := range cfs {
+		cf(cfg)
+	}
 	lis := &listener{
 		ctx:      ctx,
 		cancel:   cancel,
+		cfg:      cfg,
 		listener: l,
 		pool:     pool,
 		conns:    new(sync.Map),
 		gcTicker: defaultGCTimer,
 	}
+	lis.id = lis.cfg.CustomIDer()
 
 	go lis.gc()
 	go lis.listen()
