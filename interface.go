@@ -18,7 +18,6 @@ type Listener interface {
 type Connection interface {
 	LocalID() string
 	RemoteID() (string, error)
-	MessageCallback(fn MessageCallbackFunc)
 	Close()
 	IsClosed() bool
 	RecvCustomData(fn RecvCallbackFunc)

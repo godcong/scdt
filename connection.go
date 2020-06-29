@@ -15,20 +15,21 @@ import (
 )
 
 type connImpl struct {
-	ctx           context.Context
-	cancel        context.CancelFunc
-	fn            MessageCallbackFunc
-	cfg           *Config
-	localID       string
-	recvCallback  RecvCallbackFunc
-	remoteID      *atomic.String
-	conn          net.Conn
-	hbCheck       *time.Timer
-	session       *atomic.Uint32
-	callbackStore *sync.Map
-	recvStore     *sync.Map
-	sendQueue     chan *Queue
-	closed        *atomic.Bool
+	ctx                    context.Context
+	cancel                 context.CancelFunc
+	fn                     MessageCallbackFunc
+	cfg                    *Config
+	localID                string
+	recvCallback           RecvCallbackFunc
+	recvCustomDataCallback RecvCallbackFunc
+	remoteID               *atomic.String
+	conn                   net.Conn
+	hbCheck                *time.Timer
+	session                *atomic.Uint32
+	callbackStore          *sync.Map
+	recvStore              *sync.Map
+	sendQueue              chan *Queue
+	closed                 *atomic.Bool
 }
 
 // RecvCallbackFunc ...
@@ -39,7 +40,7 @@ var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message,
 	MessageDataTransfer: recvRequestDataTransfer,
 	MessageHeartBeat:    recvRequestHearBeat,
 	MessageConnectID:    recvRequestID,
-	//MessageUserCustom:   recvRequest,
+	MessageUserCustom:   recvCustomRequest,
 }
 
 // IsClosed ...
@@ -74,11 +75,6 @@ func (c *connImpl) RemoteID() (id string, err error) {
 		return "", errors.New("send id request failed")
 	}
 	return id, nil
-}
-
-// MessageCallback ...
-func (c *connImpl) MessageCallback(fn MessageCallbackFunc) {
-	c.fn = fn
 }
 
 // NewConn ...
@@ -256,8 +252,13 @@ func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) (*Qu
 }
 
 // send ...
-func (c *connImpl) RecvCustomData(fn RecvCallbackFunc) {
+func (c *connImpl) Recv(fn RecvCallbackFunc) {
 	c.recvCallback = fn
+}
+
+// send ...
+func (c *connImpl) RecvCustomData(fn RecvCallbackFunc) {
+	c.recvCustomDataCallback = fn
 }
 
 // Close ...
@@ -291,7 +292,20 @@ func (c *connImpl) doRecv(msg *Message) {
 }
 
 func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err error) {
-	msg = newSendMessage(src.MessageID, nil)
+	if v == nil {
+		return newSendMessage(src.MessageID, nil), nil
+	}
+	fn, b := v.(RecvCallbackFunc)
+	if !b {
+		return newSendMessage(src.MessageID, nil), nil
+	}
+	srcCopy := *src
+	copy(srcCopy.Data, src.Data)
+	data, b := fn(&srcCopy)
+	if !b {
+		return nil, errors.New("do not need response")
+	}
+	msg = newSendMessage(src.MessageID, data)
 	return
 }
 
@@ -305,29 +319,43 @@ func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	log.Debugw("local", "id", id, "src", src, "target", msg)
 	return
 }
-func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Message, err error) {
-	if callbackFunc == nil {
+func recvCustomRequest(src *Message, v interface{}) (msg *Message, err error) {
+	if v == nil {
+		return newCustomSendMessage(src.CustomID, nil), nil
+	}
+	fn, b := v.(RecvCallbackFunc)
+	if !b {
 		return newCustomSendMessage(src.CustomID, nil), nil
 	}
 	//prevent data from being destroyed
 	srcCopy := *src
 	copy(srcCopy.Data, src.Data)
-	data, b := callbackFunc(&srcCopy)
+	data, b := fn(&srcCopy)
 	if !b {
 		return nil, errors.New("do not need response")
 	}
 	return newCustomSendMessage(src.CustomID, data), nil
 }
 
+func (c *connImpl) getMessageArgs(id MessageID) interface{} {
+	switch id {
+	case MessageConnectID:
+		return c.localID
+	case MessageDataTransfer:
+		return c.recvCallback
+	case MessageUserCustom:
+		return c.recvCustomDataCallback
+	}
+	return nil
+}
+
 func (c *connImpl) recvRequest(msg *Message) {
 	f, b := recvReqFunc[msg.MessageID]
 	var newMsg *Message
 	var err error
-	//ignore error
-	if !b && msg.MessageID == MessageUserCustom {
-		newMsg, err = recvCustomRequest(msg, c.recvCallback)
-	} else if b {
-		newMsg, err = f(msg, c.localID)
+	if b {
+		v := c.getMessageArgs(msg.MessageID)
+		newMsg, err = f(msg, v)
 	} else {
 		return
 	}

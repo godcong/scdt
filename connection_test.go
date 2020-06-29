@@ -66,3 +66,16 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 	}
 	wg.Wait()
 }
+func TestConnImpl_LocalID(t *testing.T) {
+	// MessageHeartBeat ...
+	t.Log(MessageHeartBeat)
+	// MessageConnectID ...
+	t.Log(MessageConnectID)
+	// MessageDataTransfer ...
+	t.Log(MessageDataTransfer)
+	// MessageUserCustom ...
+	t.Log(MessageUserCustom)
+	// MessageRecvFailed ...
+	t.Log(MessageRecvFailed)
+
+}
