@@ -21,7 +21,7 @@ type Connection interface {
 	MessageCallback(fn MessageCallbackFunc)
 	Close()
 	IsClosed() bool
-	Recv(fn RecvCallbackFunc)
+	RecvCustomData(fn RecvCallbackFunc)
 	SendCustomData(id CustomID, data []byte) (*Queue, bool)
 	SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool)
 	SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool)

@@ -123,7 +123,7 @@ func (l *listener) listen() {
 			if err != nil {
 				return
 			}
-			c.Recv(func(message *Message) ([]byte, bool) {
+			c.RecvCustomData(func(message *Message) ([]byte, bool) {
 				if l.recvFunc != nil {
 					return l.recvFunc(id, message)
 				}

@@ -35,6 +35,12 @@ type connImpl struct {
 type RecvCallbackFunc func(message *Message) ([]byte, bool)
 
 var defaultConnSendTimeout = 30 * time.Second
+var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, err error){
+	MessageDataTransfer: recvRequestDataTransfer,
+	MessageHeartBeat:    recvRequestHearBeat,
+	MessageConnectID:    recvRequestID,
+	//MessageUserCustom:   recvRequest,
+}
 
 // IsClosed ...
 func (c *connImpl) IsClosed() bool {
@@ -250,7 +256,7 @@ func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) (*Qu
 }
 
 // send ...
-func (c *connImpl) Recv(fn RecvCallbackFunc) {
+func (c *connImpl) RecvCustomData(fn RecvCallbackFunc) {
 	c.recvCallback = fn
 }
 
@@ -284,13 +290,6 @@ func (c *connImpl) doRecv(msg *Message) {
 	}
 }
 
-var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, err error){
-	MessageDataTransfer: recvRequestDataTransfer,
-	MessageHeartBeat:    recvRequestHearBeat,
-	MessageConnectID:    recvRequestID,
-	//MessageUserCustom:   recvRequest,
-}
-
 func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err error) {
 	msg = newSendMessage(src.MessageID, nil)
 	return
@@ -310,7 +309,10 @@ func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Messag
 	if callbackFunc == nil {
 		return newCustomSendMessage(src.CustomID, nil), nil
 	}
-	data, b := callbackFunc(src)
+	//prevent data from being destroyed
+	srcCopy := *src
+	copy(srcCopy.Data, src.Data)
+	data, b := callbackFunc(&srcCopy)
 	if !b {
 		return nil, errors.New("do not need response")
 	}

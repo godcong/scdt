@@ -47,14 +47,14 @@ if b {
     fmt.Printf("waited send message:%+v,data:%s\n", msg, msg.Data)
 }
 //send some data to server and wait success callback
-connect.SendWithCallback([]byte("hello"), func(message *Message) {
+queue,ok:=connect.SendWithCallback([]byte("hello"), func(message *Message) {
     fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
 })
 //send some data to server
-connect.Send([]byte("hello"))
+queue,ok:=connect.Send([]byte("hello"))
 
 //send some data to server with a custom id and wait success callback
-connect.SendCustomDataWithCallback(0x01,[]byte("hello"), func(message *Message) {
+queue,ok:=connect.SendCustomDataWithCallback(0x01,[]byte("hello"), func(message *Message) {
     fmt.Printf("send message:%+v,data:%s\n", message, message.Data)		
 })
 
