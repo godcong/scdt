@@ -310,7 +310,10 @@ func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err err
 	msg = newSendMessage(src.MessageID, data)
 	return
 }
-
+func recvRequestFailed(src *Message, v interface{}) (msg *Message, err error) {
+	msg = newFailedSendMessage(toBytes(v.(string)))
+	return msg, nil
+}
 func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) {
 	msg = newSendMessage(src.MessageID, nil)
 	return
@@ -362,7 +365,10 @@ func (c *connImpl) recvRequest(msg *Message) {
 		return
 	}
 	if err != nil {
-		return
+		newMsg, err = recvRequestFailed(msg, err.Error())
+		if err != nil {
+			return
+		}
 	}
 	newMsg.MessageID = msg.MessageID
 	newMsg.Session = msg.Session
