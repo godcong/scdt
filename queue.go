@@ -18,8 +18,8 @@ func (q *Queue) Session() Session {
 	return q.message.Session
 }
 
-// SetSession ...
-func (q *Queue) SetSession(session Session) {
+// setSession ...
+func (q *Queue) setSession(session Session) {
 	if session == 0 || q.session == nil {
 		return
 	}
@@ -31,8 +31,8 @@ func (q *Queue) NeedCallback() bool {
 	return q.callback != nil
 }
 
-// Trigger ...
-func (q *Queue) Trigger(message *Message) {
+// trigger ...
+func (q *Queue) trigger(message *Message) {
 	if q.callback != nil {
 		t := time.NewTimer(q.timeout)
 		defer t.Reset(0)
@@ -67,8 +67,8 @@ func (q *Queue) SetTimeout(timeout time.Duration) {
 	q.timeout = timeout
 }
 
-// Send ...
-func (q *Queue) Send(out chan<- *Queue) bool {
+// send ...
+func (q *Queue) send(out chan<- *Queue) bool {
 	if out == nil {
 		return false
 	}

@@ -56,7 +56,7 @@ func (c *connImpl) RemoteID() (id string, err error) {
 		msg := newRecvMessage(MessageConnectID)
 		msg.SetDataString("hello world")
 		queue := CallbackQueue(msg)
-		if queue.Send(c.sendQueue) {
+		if queue.send(c.sendQueue) {
 			msg := queue.Wait()
 			if msg != nil && msg.DataLength != 0 {
 				id = string(msg.Data)
@@ -203,32 +203,32 @@ func (c *connImpl) addCallback(queue *Queue) {
 		return
 	}
 	s := c.newSession()
-	queue.SetSession(s)
-	c.callbackStore.Store(s, queue.Trigger)
+	queue.setSession(s)
+	c.callbackStore.Store(s, queue.trigger)
 }
 
 // SendOnWait ...
 func (c *connImpl) SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool) {
 	queue := CallbackQueue(newCustomRecvMessage(id, data))
-	if b = queue.Send(c.sendQueue); b {
+	if b = queue.send(c.sendQueue); b {
 		msg = queue.Wait()
 	}
 	return
 }
 
-// Send ...
+// send ...
 func (c *connImpl) SendCustomData(id CustomID, data []byte) (*Queue, bool) {
 	return c.SendCustomDataWithCallback(id, data, nil)
 }
 
-// Send ...
+// send ...
 func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool) {
 	queue := CallbackQueue(newCustomRecvMessage(id, data)).SetSendCallback(cb)
-	b := queue.Send(c.sendQueue)
+	b := queue.send(c.sendQueue)
 	return queue, b
 }
 
-// Send ...
+// send ...
 func (c *connImpl) Send(data []byte) (*Queue, bool) {
 	return c.SendWithCallback(data, nil)
 }
@@ -236,20 +236,20 @@ func (c *connImpl) Send(data []byte) (*Queue, bool) {
 // SendOnWait ...
 func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
 	queue := CallbackQueue(newRecvMessage(MessageDataTransfer).SetData(data))
-	if b = queue.Send(c.sendQueue); b {
+	if b = queue.send(c.sendQueue); b {
 		msg = queue.Wait()
 	}
 	return
 }
 
-// Send ...
+// send ...
 func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) (*Queue, bool) {
 	queue := CallbackQueue(newRecvMessage(MessageDataTransfer).SetData(data)).SetSendCallback(cb)
-	b := queue.Send(c.sendQueue)
+	b := queue.send(c.sendQueue)
 	return queue, b
 }
 
-// Send ...
+// send ...
 func (c *connImpl) Recv(fn RecvCallbackFunc) {
 	c.recvCallback = fn
 }
@@ -335,7 +335,7 @@ func (c *connImpl) recvRequest(msg *Message) {
 	newMsg.MessageID = msg.MessageID
 	newMsg.Session = msg.Session
 	newMsg.CustomID = msg.CustomID
-	DefaultQueue(newMsg).Send(c.sendQueue)
+	DefaultQueue(newMsg).send(c.sendQueue)
 }
 
 func (c *connImpl) recvResponse(msg *Message) {
