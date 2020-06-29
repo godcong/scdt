@@ -61,8 +61,8 @@ type Message struct {
 	Data        []byte
 }
 
-// NewSendMessage ...
-func NewSendMessage(id MessageID, data []byte) *Message {
+// newSendMessage ...
+func newSendMessage(id MessageID, data []byte) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeSend,
@@ -72,8 +72,8 @@ func NewSendMessage(id MessageID, data []byte) *Message {
 	}
 }
 
-// NewRecvMessage ...
-func NewRecvMessage(id MessageID) *Message {
+// newRecvMessage ...
+func newRecvMessage(id MessageID) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeRecv,
@@ -81,8 +81,8 @@ func NewRecvMessage(id MessageID) *Message {
 	}
 }
 
-// NewCustomSendMessage ...
-func NewCustomSendMessage(id CustomID, data []byte) *Message {
+// newCustomSendMessage ...
+func newCustomSendMessage(id CustomID, data []byte) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeSend,
@@ -93,8 +93,8 @@ func NewCustomSendMessage(id CustomID, data []byte) *Message {
 	}
 }
 
-// NewCustomRecvMessage ...
-func NewCustomRecvMessage(id CustomID, data []byte) *Message {
+// newCustomRecvMessage ...
+func newCustomRecvMessage(id CustomID, data []byte) *Message {
 	return &Message{
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeRecv,

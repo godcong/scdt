@@ -53,7 +53,7 @@ func (c *connImpl) LocalID() string {
 func (c *connImpl) RemoteID() (id string, err error) {
 	id = c.remoteID.Load()
 	if id == "" {
-		msg := NewRecvMessage(MessageConnectID)
+		msg := newRecvMessage(MessageConnectID)
 		msg.SetDataString("hello world")
 		queue := CallbackQueue(msg)
 		if queue.Send(c.sendQueue) {
@@ -163,7 +163,7 @@ func (c *connImpl) send() {
 			if c.cfg.Timeout == 0 {
 				continue
 			}
-			err := c.sendMessage(NewRecvMessage(MessageHeartBeat))
+			err := c.sendMessage(newRecvMessage(MessageHeartBeat))
 			if err != nil {
 				panic(err)
 			}
@@ -209,7 +209,7 @@ func (c *connImpl) addCallback(queue *Queue) {
 
 // SendOnWait ...
 func (c *connImpl) SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool) {
-	queue := CallbackQueue(NewCustomRecvMessage(id, data))
+	queue := CallbackQueue(newCustomRecvMessage(id, data))
 	if b = queue.Send(c.sendQueue); b {
 		msg = queue.Wait()
 	}
@@ -223,7 +223,7 @@ func (c *connImpl) SendCustomData(id CustomID, data []byte) (*Queue, bool) {
 
 // Send ...
 func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool) {
-	queue := CallbackQueue(NewCustomRecvMessage(id, data)).SetSendCallback(cb)
+	queue := CallbackQueue(newCustomRecvMessage(id, data)).SetSendCallback(cb)
 	b := queue.Send(c.sendQueue)
 	return queue, b
 }
@@ -235,7 +235,7 @@ func (c *connImpl) Send(data []byte) (*Queue, bool) {
 
 // SendOnWait ...
 func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
-	queue := CallbackQueue(NewRecvMessage(MessageDataTransfer).SetData(data))
+	queue := CallbackQueue(newRecvMessage(MessageDataTransfer).SetData(data))
 	if b = queue.Send(c.sendQueue); b {
 		msg = queue.Wait()
 	}
@@ -244,7 +244,7 @@ func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
 
 // Send ...
 func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) (*Queue, bool) {
-	queue := CallbackQueue(NewRecvMessage(MessageDataTransfer).SetData(data)).SetSendCallback(cb)
+	queue := CallbackQueue(newRecvMessage(MessageDataTransfer).SetData(data)).SetSendCallback(cb)
 	b := queue.Send(c.sendQueue)
 	return queue, b
 }
@@ -292,29 +292,29 @@ var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message,
 }
 
 func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err error) {
-	msg = NewSendMessage(src.MessageID, nil)
+	msg = newSendMessage(src.MessageID, nil)
 	return
 }
 
 func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) {
-	msg = NewSendMessage(src.MessageID, nil)
+	msg = newSendMessage(src.MessageID, nil)
 	return
 }
 func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	id := v.(string)
-	msg = NewSendMessage(src.MessageID, toBytes(id))
+	msg = newSendMessage(src.MessageID, toBytes(id))
 	log.Debugw("local", "id", id, "src", src, "target", msg)
 	return
 }
 func recvCustomRequest(src *Message, callbackFunc RecvCallbackFunc) (msg *Message, err error) {
 	if callbackFunc == nil {
-		return NewCustomSendMessage(src.CustomID, nil), nil
+		return newCustomSendMessage(src.CustomID, nil), nil
 	}
 	data, b := callbackFunc(src)
 	if !b {
 		return nil, errors.New("do not need response")
 	}
-	return NewCustomSendMessage(src.CustomID, data), nil
+	return newCustomSendMessage(src.CustomID, data), nil
 }
 
 func (c *connImpl) recvRequest(msg *Message) {
