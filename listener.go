@@ -21,6 +21,7 @@ type listener struct {
 	listener net.Listener
 	cfg      *Config
 	id       string
+	ider     CustomIDerFunc
 	pool     *ants.Pool
 	gcTicker *time.Ticker
 	conns    *sync.Map
@@ -40,7 +41,7 @@ func (l *listener) Stop() error {
 
 // ID ...
 func (l *listener) ID(f func() string) {
-	l.id = f()
+	l.ider = f
 }
 
 func (l *listener) getConn(id string) (Connection, error) {
@@ -129,6 +130,10 @@ func (l *listener) listen() {
 		}
 		l.pool.Submit(func() {
 			c := Accept(conn, func(c *Config) {
+				if l.ider != nil {
+					c.CustomIDer = l.ider
+					return
+				}
 				c.CustomIDer = func() string {
 					return l.id
 				}
