@@ -180,7 +180,9 @@ func NewListener(addr string, cfs ...ConfigFunc) (Listener, error) {
 		conns:    new(sync.Map),
 		gcTicker: defaultGCTimer,
 	}
-	lis.id = lis.cfg.CustomIDer()
+	if lis.cfg.CustomIDer != nil {
+		lis.id = lis.cfg.CustomIDer()
+	}
 
 	go lis.gc()
 	go lis.listen()
