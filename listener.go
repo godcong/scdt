@@ -38,6 +38,11 @@ func (l *listener) Stop() error {
 	return nil
 }
 
+// ID ...
+func (l *listener) ID(f func() string) {
+	l.id = f()
+}
+
 func (l *listener) getConn(id string) (Connection, error) {
 	load, ok := l.conns.Load(id)
 	if !ok {
