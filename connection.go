@@ -329,7 +329,7 @@ func recvCustomRequest(src *Message, v interface{}) (msg *Message, err error) {
 		return newCustomSendMessage(src.CustomID, nil), nil
 	}
 	fn, b := v.(RecvCallbackFunc)
-	if !b {
+	if !b || fn == nil {
 		return newCustomSendMessage(src.CustomID, nil), nil
 	}
 	//prevent data from being destroyed
