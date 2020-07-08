@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 	"net"
 	"sync"
@@ -333,8 +334,10 @@ func recvCustomRequest(src *Message, v interface{}) (msg *Message, err error) {
 		return newCustomSendMessage(src.CustomID, nil), nil
 	}
 	//prevent data from being destroyed
+
 	srcCopy := *src
 	copy(srcCopy.Data, src.Data)
+	fmt.Printf("process custom data:%+v", srcCopy)
 	data, b := fn(&srcCopy)
 	if !b {
 		return nil, errors.New("do not need response")
