@@ -134,9 +134,13 @@ func (l *listener) listen() {
 					c.CustomIDer = l.ider
 					return
 				}
-				c.CustomIDer = func() string {
-					return l.id
+				if l.id != "" {
+					c.CustomIDer = func() string {
+						return l.id
+					}
+					return
 				}
+				c.CustomIDer = UUID
 			})
 			id, err := c.RemoteID()
 			if err != nil {

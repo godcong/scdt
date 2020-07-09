@@ -18,6 +18,9 @@ func TestListener_Stop(t *testing.T) {
 			return id
 		}
 	})
+	lis.SetGlobalID(func() string {
+		return id
+	})
 	if err != nil {
 		panic(err)
 	}
