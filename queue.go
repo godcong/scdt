@@ -11,6 +11,17 @@ type Queue struct {
 	timeout      time.Duration
 	session      *Session //link msg.session => session
 	sendCallback func(msg *Message)
+	recvCallback func(msg *Message)
+}
+
+// RecvCallback ...
+func (q *Queue) RecvCallback() func(msg *Message) {
+	return q.recvCallback
+}
+
+// SetRecvCallback ...
+func (q *Queue) SetRecvCallback(recvCallback func(msg *Message)) {
+	q.recvCallback = recvCallback
 }
 
 // Session ...

@@ -295,6 +295,7 @@ func (c *connImpl) doRecv(msg *Message) {
 }
 
 func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
+	log.Infow("transfer recv callback", "isnull", v == nil)
 	if v == nil {
 		return newSendMessage(src.MessageID, nil), nil
 	}
@@ -302,11 +303,12 @@ func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, er
 	var msgCopy Message
 	msgCopy = *src
 	copy(msgCopy.Data, src.Data)
-	log.Debugw("copy message info", "msg", msgCopy)
 	data, b := v(&msgCopy)
+	log.Infow("copy message info", "msg", msgCopy, "need", b)
 	if !b {
 		return &Message{}, errors.New("do not need response")
 	}
+	log.Infow("transfer data ", "data", string(data))
 	msg = newSendMessage(src.MessageID, data)
 	return
 }
@@ -354,10 +356,8 @@ func (c *connImpl) recvRequest(msg *Message) {
 		newMsg, err = f(msg, c.getMessageArgs(msg.MessageID))
 	} else if msg.MessageID == MessageDataTransfer {
 		newMsg, err = recvRequestDataTransfer(msg, c.recvCallback)
-		return
 	} else if msg.MessageID == MessageUserCustom {
 		newMsg, err = recvCustomRequest(msg, c.recvCustomDataCallback)
-		return
 	} else {
 		newMsg, _ = recvRequestFailed(msg, "no case matched")
 	}
