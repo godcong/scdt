@@ -240,6 +240,7 @@ func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
 	queue := CallbackQueue(newRecvMessage(MessageDataTransfer).SetData(data))
 	if b = queue.send(c.sendQueue); b {
 		msg = queue.Wait()
+		b = msg != nil
 	}
 	return
 }
