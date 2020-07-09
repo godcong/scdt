@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"math"
 	"net"
 	"sync"
@@ -337,7 +336,7 @@ func recvCustomRequest(src *Message, v interface{}) (msg *Message, err error) {
 
 	srcCopy := *src
 	copy(srcCopy.Data, src.Data)
-	fmt.Printf("process custom data:%+v", srcCopy)
+	log.Debugw("process custom data", "data", srcCopy)
 	data, b := fn(&srcCopy)
 	if !b {
 		return nil, errors.New("do not need response")
@@ -367,6 +366,7 @@ func (c *connImpl) recvRequest(msg *Message) {
 	} else {
 		return
 	}
+	log.Debugw("received", "msg", newMsg, "err", err)
 	if err != nil {
 		newMsg, err = recvRequestFailed(msg, err.Error())
 		if err != nil {

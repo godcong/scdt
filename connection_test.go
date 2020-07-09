@@ -20,6 +20,10 @@ func TestListener_Stop(t *testing.T) {
 	if err := http.ListenAndServe(ip, nil); err != nil {
 		fmt.Printf("start pprof failed on %s\n", ip)
 	}
+	lis.HandleRecv(func(id string, message *Message) ([]byte, bool) {
+		fmt.Printf("id:%s,message:%+v\n", id, message)
+		return nil, true
+	})
 	lis.Stop()
 
 }
@@ -40,27 +44,25 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 			}
 			connect := Connect(dial)
 			log.Infow("request remote id", "local", connect.LocalID())
-			for {
-				id, err := connect.RemoteID()
-				if err != nil {
-					t.Fatal(err)
-				}
-				fmt.Println("local id", connect.LocalID(), "remote id", id)
-				connect.SendWithCallback([]byte("hello"), func(message *Message) {
-					fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
-				})
-				msg, b := connect.SendOnWait([]byte("hello"))
-				if b {
-					fmt.Printf("waited send message:%+v,data:%s\n", msg, msg.Data)
-				}
-				connect.SendCustomDataWithCallback(0x01, []byte("hello"), func(message *Message) {
-
-				})
-				connect.RecvCustomData(func(message *Message) ([]byte, bool) {
-					fmt.Printf("recv message:%+v,data:%s\n", id, message.Data)
-					return nil, false
-				})
+			id, err := connect.RemoteID()
+			if err != nil {
+				t.Fatal(err)
 			}
+			fmt.Println("local id", connect.LocalID(), "remote id", id)
+			connect.SendWithCallback([]byte("hello"), func(message *Message) {
+				fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
+			})
+			msg, b := connect.SendOnWait([]byte("hello"))
+			if b {
+				fmt.Printf("waited send message:%+v,data:%s\n", msg, msg.Data)
+			}
+			connect.SendCustomDataWithCallback(0x01, []byte("hello"), func(message *Message) {
+
+			})
+			connect.RecvCustomData(func(message *Message) ([]byte, bool) {
+				fmt.Printf("recv message:%+v,data:%s\n", id, message.Data)
+				return nil, false
+			})
 
 		}()
 	}
