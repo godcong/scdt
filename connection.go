@@ -214,6 +214,7 @@ func (c *connImpl) SendCustomDataOnWait(id CustomID, data []byte) (msg *Message,
 	queue := CallbackQueue(newCustomRecvMessage(id, data))
 	if b = queue.send(c.sendQueue); b {
 		msg = queue.Wait()
+		b = msg != nil
 	}
 	return
 }
