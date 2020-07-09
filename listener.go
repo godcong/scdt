@@ -152,6 +152,7 @@ func (l *listener) listen() {
 				if err != nil {
 					return nil, false
 				}
+				log.Debugw("recv message", "id", id, "message", message)
 				return l.handleRecv(remoteID)(message)
 			})
 			c.RecvCustomData(func(message *Message) ([]byte, bool) {
@@ -159,6 +160,7 @@ func (l *listener) listen() {
 				if err != nil {
 					return nil, false
 				}
+				log.Debugw("recv message", "id", id, "message", message)
 				return l.handleRecv(remoteID)(message)
 			})
 
