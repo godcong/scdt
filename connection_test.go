@@ -58,7 +58,7 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 				t.Fatal(err)
 			}
 			fmt.Println("local id", connect.LocalID(), "remote id", id)
-			_, b := connect.SendWithCallback([]byte("hello send with callback"), func(message *Message) {
+			_, b := connect.SendCustomDataWithCallback(0x01, []byte("hello send with callback"), func(message *Message) {
 				fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
 			})
 			//if b {
@@ -67,7 +67,7 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 			//		fmt.Printf("waited send message callback:%+v,data:%s\n", wait, wait.Data)
 			//	}
 			//}
-			msg, b := connect.SendOnWait([]byte("hello send on wait"))
+			msg, b := connect.SendCustomDataOnWait(0x02, []byte("hello send on wait"))
 			if b {
 				fmt.Printf("waited send message:%+v,data:%s\n", msg, msg.Data)
 			}
