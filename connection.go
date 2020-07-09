@@ -361,13 +361,12 @@ func (c *connImpl) recvRequest(msg *Message) {
 	} else if msg.MessageID == MessageUserCustom {
 		newMsg, err = recvCustomRequest(msg, c.recvCustomDataCallback)
 		return
+	} else {
+		newMsg, _ = recvRequestFailed(msg, "no case matched")
 	}
 	log.Debugw("received", "msg", newMsg, "err", err)
 	if err != nil {
-		newMsg, err = recvRequestFailed(msg, err.Error())
-		if err != nil {
-			return
-		}
+		newMsg, _ = recvRequestFailed(msg, err.Error())
 	}
 	newMsg.MessageID = msg.MessageID
 	newMsg.Session = msg.Session
