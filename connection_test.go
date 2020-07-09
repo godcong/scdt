@@ -12,7 +12,12 @@ import (
 )
 
 func TestListener_Stop(t *testing.T) {
-	lis, err := NewListener("0.0.0.0:12345")
+	id := UUID()
+	lis, err := NewListener("0.0.0.0:12345", func(c *Config) {
+		c.CustomIDer = func() string {
+			return id
+		}
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +68,6 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 				fmt.Printf("recv message:%+v,data:%s\n", id, message.Data)
 				return nil, false
 			})
-
 		}()
 	}
 	wg.Wait()

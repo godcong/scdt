@@ -9,7 +9,7 @@ import (
 var log l.Logger
 
 // logLevel ...
-var logLevel = zapcore.InfoLevel
+var logLevel = zapcore.DebugLevel
 
 func init() {
 	cfg := zap.NewProductionConfig()

@@ -142,6 +142,7 @@ func (l *listener) listen() {
 			if err != nil {
 				return
 			}
+			log.Debugw("recieved id", "id", id)
 			c.Recv(l.handleRecv(id))
 			c.RecvCustomData(l.handleRecv(id))
 

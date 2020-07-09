@@ -60,11 +60,15 @@ func (c *connImpl) LocalID() string {
 func (c *connImpl) RemoteID() (id string, err error) {
 	id = c.remoteID.Load()
 	if id == "" {
-		msg := newRecvMessage(MessageConnectID)
-		msg.SetDataString("hello world")
-		queue := CallbackQueue(msg)
+		//msg := newRecvMessage(MessageConnectID)
+		//msg.SetDataString("hello world")
+		queue := CallbackQueue(newRecvMessage(MessageConnectID))
 		if queue.send(c.sendQueue) {
 			msg := queue.Wait()
+			log.Debugw("result msg", "msg", msg)
+			if msg.DataLength != 0 {
+				log.Debugw("debug data detail", "data", string(msg.Data))
+			}
 			if msg != nil && msg.DataLength != 0 {
 				id = string(msg.Data)
 				c.remoteID.Store(id)
@@ -142,7 +146,7 @@ func (c *connImpl) recv() {
 			if err != nil {
 				panic(err)
 			}
-			log.Debugw("recv", "msg", msg)
+			log.Debugw("recv", "msg", msg, "data", msg.Data)
 			go c.doRecv(&msg)
 		}
 	}
@@ -298,7 +302,7 @@ func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err err
 		return newSendMessage(src.MessageID, nil), nil
 	}
 	fn, b := v.(RecvCallbackFunc)
-	if !b {
+	if !b && fn == nil {
 		return newSendMessage(src.MessageID, nil), nil
 	}
 	srcCopy := *src
@@ -366,7 +370,10 @@ func (c *connImpl) recvRequest(msg *Message) {
 	} else {
 		return
 	}
-	log.Debugw("received", "msg", newMsg, "err", err)
+	log.Debugw("received", "msg", newMsg, "type", newMsg.RequestType(), "err", err)
+	if newMsg.DataLength != 0 {
+		log.Debugw("received data", "data", string(newMsg.Data))
+	}
 	if err != nil {
 		newMsg, err = recvRequestFailed(msg, err.Error())
 		if err != nil {
