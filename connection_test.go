@@ -42,7 +42,7 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 		Port: 0,
 	}
 	wg := &sync.WaitGroup{}
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -58,9 +58,9 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 				t.Fatal(err)
 			}
 			fmt.Println("local id", connect.LocalID(), "remote id", id)
-			//callback, b := connect.SendWithCallback([]byte("hello send with callback"), func(message *Message) {
-			//fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
-			//})
+			_, b := connect.SendWithCallback([]byte("hello send with callback"), func(message *Message) {
+				fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
+			})
 			//if b {
 			//	wait := callback.Wait()
 			//	if wait != nil {

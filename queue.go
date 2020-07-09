@@ -20,8 +20,9 @@ func (q *Queue) RecvCallback() func(msg *Message) {
 }
 
 // SetRecvCallback ...
-func (q *Queue) SetRecvCallback(recvCallback func(msg *Message)) {
+func (q *Queue) SetRecvCallback(recvCallback func(msg *Message)) *Queue {
 	q.recvCallback = recvCallback
+	return q
 }
 
 // Session ...
@@ -44,6 +45,9 @@ func (q *Queue) NeedCallback() bool {
 
 // trigger ...
 func (q *Queue) trigger(message *Message) {
+	if q.recvCallback != nil {
+		q.recvCallback(message)
+	}
 	if q.callback != nil {
 		t := time.NewTimer(q.timeout)
 		defer t.Reset(0)
