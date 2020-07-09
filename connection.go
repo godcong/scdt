@@ -66,10 +66,8 @@ func (c *connImpl) RemoteID() (id string, err error) {
 		if queue.send(c.sendQueue) {
 			msg := queue.Wait()
 			log.Debugw("result msg", "msg", msg)
-			if msg.DataLength != 0 {
-				log.Debugw("debug data detail", "data", string(msg.Data))
-			}
 			if msg != nil && msg.DataLength != 0 {
+				log.Debugw("debug data detail", "data", string(msg.Data))
 				id = string(msg.Data)
 				c.remoteID.Store(id)
 				return
@@ -302,14 +300,17 @@ func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err err
 		return newSendMessage(src.MessageID, nil), nil
 	}
 	fn, b := v.(RecvCallbackFunc)
-	if !b && fn == nil {
+	if !b {
 		return newSendMessage(src.MessageID, nil), nil
 	}
-	srcCopy := *src
-	copy(srcCopy.Data, src.Data)
-	data, b := fn(&srcCopy)
+	var msgCopy Message
+	msgCopy = *src
+	copy(msgCopy.Data, src.Data)
+	log.Debugw("copy message info", "msg", msgCopy)
+	log.Debugw("print fn info", "addr", fn)
+	data, b := fn(&msgCopy)
 	if !b {
-		return nil, errors.New("do not need response")
+		return &Message{}, errors.New("do not need response")
 	}
 	msg = newSendMessage(src.MessageID, data)
 	return
@@ -343,7 +344,7 @@ func recvCustomRequest(src *Message, v interface{}) (msg *Message, err error) {
 	log.Debugw("process custom data", "data", srcCopy)
 	data, b := fn(&srcCopy)
 	if !b {
-		return nil, errors.New("do not need response")
+		return &Message{}, errors.New("do not need response")
 	}
 	return newCustomSendMessage(src.CustomID, data), nil
 }
@@ -365,15 +366,11 @@ func (c *connImpl) recvRequest(msg *Message) {
 	var newMsg *Message
 	var err error
 	if b {
-		v := c.getMessageArgs(msg.MessageID)
-		newMsg, err = f(msg, v)
+		newMsg, err = f(msg, c.getMessageArgs(msg.MessageID))
 	} else {
 		return
 	}
-	log.Debugw("received", "msg", newMsg, "type", newMsg.RequestType(), "err", err)
-	if newMsg.DataLength != 0 {
-		log.Debugw("received data", "data", string(newMsg.Data))
-	}
+	log.Debugw("received", "msg", newMsg, "err", err)
 	if err != nil {
 		newMsg, err = recvRequestFailed(msg, err.Error())
 		if err != nil {
@@ -383,6 +380,9 @@ func (c *connImpl) recvRequest(msg *Message) {
 	newMsg.MessageID = msg.MessageID
 	newMsg.Session = msg.Session
 	newMsg.CustomID = msg.CustomID
+	if newMsg.DataLength != 0 {
+		log.Debugw("received data", "type", newMsg.RequestType(), "data", string(newMsg.Data))
+	}
 	DefaultQueue(newMsg).send(c.sendQueue)
 }
 

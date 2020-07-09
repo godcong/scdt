@@ -39,8 +39,8 @@ func (l *listener) Stop() error {
 	return nil
 }
 
-// ID ...
-func (l *listener) ID(f func() string) {
+// SetGlobalID ...
+func (l *listener) SetGlobalID(f func() string) {
 	l.ider = f
 }
 

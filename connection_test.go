@@ -26,7 +26,7 @@ func TestListener_Stop(t *testing.T) {
 		fmt.Printf("start pprof failed on %s\n", ip)
 	}
 	lis.HandleRecv(func(id string, message *Message) ([]byte, bool) {
-		fmt.Printf("id:%s,message:%+v\n", id, message)
+		log.Debugw("receive callback", "id", id, "message", message)
 		return nil, true
 	})
 	lis.Stop()
@@ -38,7 +38,7 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 		Port: 0,
 	}
 	wg := &sync.WaitGroup{}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -54,10 +54,10 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 				t.Fatal(err)
 			}
 			fmt.Println("local id", connect.LocalID(), "remote id", id)
-			connect.SendWithCallback([]byte("hello"), func(message *Message) {
+			connect.SendWithCallback([]byte("hello send with callback"), func(message *Message) {
 				fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
 			})
-			msg, b := connect.SendOnWait([]byte("hello"))
+			msg, b := connect.SendOnWait([]byte("hello send on wait"))
 			if b {
 				fmt.Printf("waited send message:%+v,data:%s\n", msg, msg.Data)
 			}
