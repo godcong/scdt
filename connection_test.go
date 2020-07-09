@@ -29,7 +29,7 @@ func TestListener_Stop(t *testing.T) {
 		fmt.Printf("start pprof failed on %s\n", ip)
 	}
 	lis.HandleRecv(func(id string, message *Message) ([]byte, bool) {
-		log.Debugw("receive callback", "id", id, "message", message)
+		log.Infow("receive callback", "id", id, "message", message)
 		return nil, true
 	})
 	lis.Stop()

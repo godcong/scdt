@@ -342,10 +342,10 @@ func (c *connImpl) getMessageArgs(id MessageID) interface{} {
 	switch id {
 	case MessageConnectID:
 		return c.localID
-	case MessageDataTransfer:
-		return c.recvCallback
-	case MessageUserCustom:
-		return c.recvCustomDataCallback
+		//case MessageDataTransfer:
+		//	return c.recvCallback
+		//case MessageUserCustom:
+		//	return c.recvCustomDataCallback
 	}
 	return nil
 }

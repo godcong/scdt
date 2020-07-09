@@ -165,7 +165,7 @@ func (l *listener) listen() {
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
 				time.Sleep(15 * time.Second)
-				log.Infow("connecting", "id", id)
+				log.Infow("connected from", "id", id)
 			}
 			l.conns.Delete(id)
 		})
