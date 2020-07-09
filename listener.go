@@ -147,8 +147,20 @@ func (l *listener) listen() {
 				return
 			}
 			log.Debugw("recieved id", "id", id)
-			c.Recv(l.handleRecv(id))
-			c.RecvCustomData(l.handleRecv(id))
+			c.Recv(func(message *Message) ([]byte, bool) {
+				remoteID, err := c.RemoteID()
+				if err != nil {
+					return nil, false
+				}
+				return l.handleRecv(remoteID)(message)
+			})
+			c.RecvCustomData(func(message *Message) ([]byte, bool) {
+				remoteID, err := c.RemoteID()
+				if err != nil {
+					return nil, false
+				}
+				return l.handleRecv(remoteID)(message)
+			})
 
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
