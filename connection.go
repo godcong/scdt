@@ -295,7 +295,6 @@ func (c *connImpl) doRecv(msg *Message) {
 }
 
 func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
-	log.Infow("transfer recv callback", "isnull", v == nil)
 	if v == nil {
 		return newSendMessage(src.MessageID, nil), nil
 	}
@@ -304,13 +303,26 @@ func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, er
 	msgCopy = *src
 	copy(msgCopy.Data, src.Data)
 	data, b := v(&msgCopy)
-	log.Infow("copy message info", "msg", msgCopy, "need", b)
+	log.Debugw("copy message info", "msg", msgCopy, "need", b)
 	if !b {
 		return &Message{}, errors.New("do not need response")
 	}
-	log.Infow("transfer data ", "data", string(data))
 	msg = newSendMessage(src.MessageID, data)
 	return
+}
+func recvCustomRequest(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
+	if v == nil {
+		return newCustomSendMessage(src.CustomID, nil), nil
+	}
+	var msgCopy Message
+	msgCopy = *src
+	copy(msgCopy.Data, src.Data)
+	data, b := v(&msgCopy)
+	log.Debugw("copy custom message info", "msg", msgCopy, "need", b)
+	if !b {
+		return &Message{}, errors.New("do not need response")
+	}
+	return newCustomSendMessage(src.CustomID, data), nil
 }
 func recvRequestFailed(src *Message, v interface{}) (msg *Message, err error) {
 	msg = newFailedSendMessage(toBytes(v.(string)))
@@ -325,19 +337,6 @@ func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	msg = newSendMessage(src.MessageID, toBytes(id))
 	log.Debugw("local", "id", id, "src", src, "target", msg)
 	return
-}
-func recvCustomRequest(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
-	if v == nil {
-		return newCustomSendMessage(src.CustomID, nil), nil
-	}
-	srcCopy := *src
-	copy(srcCopy.Data, src.Data)
-	log.Debugw("process custom data", "data", srcCopy)
-	data, b := v(&srcCopy)
-	if !b {
-		return &Message{}, errors.New("do not need response")
-	}
-	return newCustomSendMessage(src.CustomID, data), nil
 }
 
 func (c *connImpl) getMessageArgs(id MessageID) interface{} {
