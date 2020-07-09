@@ -37,10 +37,8 @@ type RecvCallbackFunc func(message *Message) ([]byte, bool)
 
 var defaultConnSendTimeout = 30 * time.Second
 var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, err error){
-	MessageDataTransfer: recvRequestDataTransfer,
-	MessageHeartBeat:    recvRequestHearBeat,
-	MessageConnectID:    recvRequestID,
-	MessageUserCustom:   recvCustomRequest,
+	MessageHeartBeat: recvRequestHearBeat,
+	MessageConnectID: recvRequestID,
 }
 
 // IsClosed ...
@@ -295,20 +293,16 @@ func (c *connImpl) doRecv(msg *Message) {
 	}
 }
 
-func recvRequestDataTransfer(src *Message, v interface{}) (msg *Message, err error) {
+func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
 	if v == nil {
 		return newSendMessage(src.MessageID, nil), nil
 	}
-	fn, b := v.(RecvCallbackFunc)
-	if !b {
-		return newSendMessage(src.MessageID, nil), nil
-	}
+
 	var msgCopy Message
 	msgCopy = *src
 	copy(msgCopy.Data, src.Data)
 	log.Debugw("copy message info", "msg", msgCopy)
-	log.Debugw("print fn info", "addr", fn)
-	data, b := fn(&msgCopy)
+	data, b := v(&msgCopy)
 	if !b {
 		return &Message{}, errors.New("do not need response")
 	}
@@ -329,20 +323,14 @@ func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
 	log.Debugw("local", "id", id, "src", src, "target", msg)
 	return
 }
-func recvCustomRequest(src *Message, v interface{}) (msg *Message, err error) {
+func recvCustomRequest(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
 	if v == nil {
 		return newCustomSendMessage(src.CustomID, nil), nil
 	}
-	fn, b := v.(RecvCallbackFunc)
-	if !b || fn == nil {
-		return newCustomSendMessage(src.CustomID, nil), nil
-	}
-	//prevent data from being destroyed
-
 	srcCopy := *src
 	copy(srcCopy.Data, src.Data)
 	log.Debugw("process custom data", "data", srcCopy)
-	data, b := fn(&srcCopy)
+	data, b := v(&srcCopy)
 	if !b {
 		return &Message{}, errors.New("do not need response")
 	}
@@ -367,7 +355,11 @@ func (c *connImpl) recvRequest(msg *Message) {
 	var err error
 	if b {
 		newMsg, err = f(msg, c.getMessageArgs(msg.MessageID))
-	} else {
+	} else if msg.MessageID == MessageDataTransfer {
+		newMsg, err = recvRequestDataTransfer(msg, c.recvCallback)
+		return
+	} else if msg.MessageID == MessageUserCustom {
+		newMsg, err = recvCustomRequest(msg, c.recvCustomDataCallback)
 		return
 	}
 	log.Debugw("received", "msg", newMsg, "err", err)
