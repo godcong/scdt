@@ -96,7 +96,7 @@ func (l *listener) SendTo(id string, data []byte, f func(id string, message *Mes
 
 // HandleRecv ...
 func (l *listener) HandleRecv(fn HandleRecvFunc) {
-	log.Infow("register recv", "funcNull", fn == nil)
+	log.Debugw("register recv", "funcNull", fn == nil)
 	l.recvFunc = fn
 }
 
@@ -116,7 +116,7 @@ func (l *listener) gc() {
 
 func (l *listener) handleRecv(id string) func(message *Message) ([]byte, bool) {
 	return func(message *Message) ([]byte, bool) {
-		log.Infow("recvFunc", "id", id, "message", message, "funcNull", l.recvFunc == nil)
+		log.Debugw("recvFunc", "id", id, "message", message, "funcNull", l.recvFunc == nil)
 		if l.recvFunc != nil {
 			return l.recvFunc(id, message)
 		}
@@ -156,7 +156,7 @@ func (l *listener) listen() {
 				}
 
 				bytes, b := l.handleRecv(remoteID)(message)
-				log.Infow("recv message", "id", id, "message", message, "result data", string(bytes), "need", b)
+				log.Debugw("recv message", "id", id, "message", message, "result data", string(bytes), "need", b)
 				return bytes, b, nil
 			})
 			c.RecvCustomData(func(message *Message) ([]byte, bool, error) {
@@ -165,14 +165,14 @@ func (l *listener) listen() {
 					return nil, true, err
 				}
 				bytes, b := l.handleRecv(remoteID)(message)
-				log.Infow("recv message", "id", id, "message", message, "result data", string(bytes), "need", b)
+				log.Debugw("recv message", "id", id, "message", message, "result data", string(bytes), "need", b)
 				return bytes, b, nil
 			})
 
 			l.conns.Store(id, c)
 			for !c.IsClosed() {
 				time.Sleep(15 * time.Second)
-				log.Infow("connected from", "id", id)
+				log.Debugw("connected from", "id", id)
 			}
 			l.conns.Delete(id)
 		})
