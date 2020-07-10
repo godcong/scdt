@@ -142,7 +142,7 @@ func (c *connImpl) recv() {
 			if err != nil {
 				panic(err)
 			}
-			log.Debugw("recv", "msg", msg, "data", msg.Data)
+			log.Debugw("recv", "msg", msg, "msgRequest", msg.RequestType(), "data", msg.Data)
 			go c.doRecv(&msg)
 		}
 	}
@@ -172,7 +172,7 @@ func (c *connImpl) send() {
 			c.hbCheck.Reset(c.cfg.Timeout)
 		case q := <-c.sendQueue:
 			c.addCallback(q)
-			log.Debugw("send", "msg", q.message)
+			log.Debugw("send", "msg", q.message, "msgRequest", q.message.RequestType())
 			err := c.sendMessage(q.message)
 			if err != nil {
 				panic(err)
