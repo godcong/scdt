@@ -33,10 +33,10 @@ type connImpl struct {
 }
 
 // RecvCallbackFunc ...
-type RecvCallbackFunc func(message *Message) ([]byte, bool)
+type RecvCallbackFunc func(message *Message) ([]byte, bool, error)
 
 var defaultConnSendTimeout = 30 * time.Second
-var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, err error){
+var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, b bool, err error){
 	MessageHeartBeat: recvRequestHearBeat,
 	MessageConnectID: recvRequestID,
 }
@@ -291,53 +291,54 @@ func (c *connImpl) doRecv(msg *Message) {
 		c.recvFailed(msg)
 	default:
 		panic("unsupported request type")
-		return
+		//return
 	}
 }
 
-func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
+func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, b bool, err error) {
 	if v == nil {
-		return newSendMessage(src.MessageID, nil), nil
+		return newSendMessage(src.MessageID, nil), true, nil
 	}
 
 	var msgCopy Message
 	msgCopy = *src
 	copy(msgCopy.Data, src.Data)
-	data, b := v(&msgCopy)
+	data, b, err := v(&msgCopy)
 	log.Debugw("copy message info", "msg", msgCopy, "need", b)
 	if !b {
-		return &Message{}, errors.New("do not need response")
+		return &Message{}, false, errors.New("do not need response")
 	}
-	msg = newSendMessage(src.MessageID, data)
-	return
+	if err != nil {
+		return &Message{}, true, err
+	}
+	return newSendMessage(src.MessageID, data), true, nil
 }
-func recvCustomRequest(src *Message, v RecvCallbackFunc) (msg *Message, err error) {
+func recvCustomRequest(src *Message, v RecvCallbackFunc) (msg *Message, b bool, err error) {
 	if v == nil {
-		return newCustomSendMessage(src.CustomID, nil), nil
+		return newCustomSendMessage(src.CustomID, nil), true, nil
 	}
 	var msgCopy Message
 	msgCopy = *src
 	copy(msgCopy.Data, src.Data)
-	data, b := v(&msgCopy)
+	data, b, err := v(&msgCopy)
 	log.Debugw("copy custom message info", "msg", msgCopy, "need", b)
 	if !b {
-		return &Message{}, errors.New("do not need response")
+		return &Message{}, false, errors.New("do not need response")
 	}
-	return newCustomSendMessage(src.CustomID, data), nil
+	if err != nil {
+		return &Message{}, true, err
+	}
+	return newCustomSendMessage(src.CustomID, data), true, nil
 }
-func recvRequestFailed(src *Message, v interface{}) (msg *Message, err error) {
-	msg = newFailedSendMessage(toBytes(v.(string)))
-	return msg, nil
+func recvRequestFailed(src *Message, v interface{}) (msg *Message, b bool, err error) {
+	return newFailedSendMessage(toBytes(v.(string))), true, nil
 }
-func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, err error) {
-	msg = newSendMessage(src.MessageID, nil)
-	return
+func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, b bool, err error) {
+	return newSendMessage(src.MessageID, nil), true, nil
 }
-func recvRequestID(src *Message, v interface{}) (msg *Message, err error) {
+func recvRequestID(src *Message, v interface{}) (msg *Message, b bool, err error) {
 	id := v.(string)
-	msg = newSendMessage(src.MessageID, toBytes(id))
-	log.Debugw("local", "id", id, "src", src, "target", msg)
-	return
+	return newSendMessage(src.MessageID, toBytes(id)), true, nil
 }
 
 func (c *connImpl) getMessageArgs(id MessageID) interface{} {
@@ -353,17 +354,22 @@ func (c *connImpl) recvRequest(msg *Message) {
 	var newMsg *Message
 	var err error
 	if b {
-		newMsg, err = f(msg, c.getMessageArgs(msg.MessageID))
+		newMsg, b, err = f(msg, c.getMessageArgs(msg.MessageID))
 	} else if msg.MessageID == MessageDataTransfer {
-		newMsg, err = recvRequestDataTransfer(msg, c.recvCallback)
+		newMsg, b, err = recvRequestDataTransfer(msg, c.recvCallback)
 	} else if msg.MessageID == MessageUserCustom {
-		newMsg, err = recvCustomRequest(msg, c.recvCustomDataCallback)
+		newMsg, b, err = recvCustomRequest(msg, c.recvCustomDataCallback)
 	} else {
-		newMsg, _ = recvRequestFailed(msg, "no case matched")
+		newMsg, b, _ = recvRequestFailed(msg, "no case matched")
 	}
-	log.Debugw("received", "msg", newMsg, "err", err)
+	log.Debugw("received", "msg", newMsg, "result", b, "err", err)
+	if !b {
+		return
+	}
+
 	if err != nil {
-		newMsg, _ = recvRequestFailed(msg, err.Error())
+		//ignore err, ignore result tag
+		newMsg, _, _ = recvRequestFailed(msg, err.Error())
 	}
 	newMsg.MessageID = msg.MessageID
 	newMsg.Session = msg.Session
