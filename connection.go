@@ -263,8 +263,14 @@ func (c *connImpl) RecvCustomData(fn RecvCallbackFunc) {
 	c.recvCustomDataCallback = fn
 }
 
+// SendClose ...
+func (c *connImpl) SendClose(msg []byte) bool {
+	return CallbackQueue(newCloseMessage(MessageClose, msg)).send(c.sendQueue)
+}
+
 // Close ...
 func (c *connImpl) Close() {
+
 	log.Debugw("close")
 	if c.cancel != nil {
 		c.cancel()
@@ -289,6 +295,8 @@ func (c *connImpl) doRecv(msg *Message) {
 		c.recvResponse(msg)
 	case RequestTypeFailed:
 		c.recvFailed(msg)
+	case RequestTypeClose:
+		c.recvClose(msg)
 	default:
 		panic("unsupported request type")
 		//return
@@ -411,6 +419,15 @@ func (c *connImpl) recvFailed(msg *Message) {
 	if b {
 		trigger(msg)
 	}
+	c.Close()
+}
+
+func (c *connImpl) recvClose(msg *Message) {
+	trigger, b := c.getCallback(msg.Session)
+	if b {
+		trigger(msg)
+	}
+	c.Close()
 }
 
 // ScanExchange ...

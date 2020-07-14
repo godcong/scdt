@@ -38,6 +38,8 @@ const (
 	RequestTypeSend
 	// RequestTypeFailed ...
 	RequestTypeFailed
+	// RequestTypeClose ...
+	RequestTypeClose
 )
 
 const (
@@ -52,6 +54,8 @@ const (
 	MessageUserCustom
 	// MessageRecvFailed ...
 	MessageRecvFailed
+	// MessageClose ...
+	MessageClose
 )
 
 // Message ...
@@ -82,6 +86,16 @@ func newRecvMessage(id MessageID) *Message {
 		version:     Version{'v', 0, 0, 1},
 		requestType: RequestTypeRecv,
 		MessageID:   id,
+	}
+}
+
+func newCloseMessage(id MessageID, msg []byte) *Message {
+	return &Message{
+		version:     Version{'v', 0, 0, 1},
+		requestType: RequestTypeClose,
+		MessageID:   id,
+		DataLength:  Length(msg),
+		Data:        msg,
 	}
 }
 
