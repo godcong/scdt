@@ -29,6 +29,7 @@ type Connection interface {
 	Send(data []byte) (*Queue, bool)
 	SendOnWait(data []byte) (*Message, bool)
 	SendWithCallback(data []byte, cb func(message *Message)) (*Queue, bool)
+	SendClose([]byte) bool
 }
 
 // SendCallback ...
