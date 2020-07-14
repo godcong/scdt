@@ -423,10 +423,13 @@ func (c *connImpl) recvFailed(msg *Message) {
 }
 
 func (c *connImpl) recvClose(msg *Message) {
-	trigger, b := c.getCallback(msg.Session)
-	if b {
-		trigger(msg)
-	}
+	c.callbackStore.Range(func(key, value interface{}) bool {
+		f, b := value.(func(message *Message))
+		if b {
+			f(msg)
+		}
+		return true
+	})
 	c.Close()
 }
 

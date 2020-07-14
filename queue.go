@@ -1,11 +1,16 @@
 package scdt
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 var defaultQueueTimeout = 30 * time.Second
 
 // Queue ...
 type Queue struct {
+	ctx          context.Context
+	cancel       context.CancelFunc
 	message      *Message
 	callback     chan *Message
 	timeout      time.Duration
