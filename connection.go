@@ -35,8 +35,11 @@ type connImpl struct {
 // RecvCallbackFunc ...
 type RecvCallbackFunc func(message *Message) ([]byte, bool, error)
 
+// ErrPing ...
+var ErrPing = errors.New("ping remote address failed")
 var defaultConnSendTimeout = 30 * time.Second
 var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, b bool, err error){
+	MessagePing:      recvRequestPing,
 	MessageHeartBeat: recvRequestHearBeat,
 	MessageConnectID: recvRequestID,
 }
@@ -75,6 +78,21 @@ func (c *connImpl) RemoteID() (id string, err error) {
 		return "", errors.New("send id request failed")
 	}
 	return id, nil
+}
+
+// Ping ...
+func (c *connImpl) Ping() (string, error) {
+	queue := CallbackQueue(newRecvMessage(MessagePing))
+	if b := queue.send(c.sendQueue); b {
+		msg := queue.Wait()
+		if msg.RequestType() == RequestTypeFailed && msg.DataLength > 0 {
+			return "", errors.New(string(msg.Data))
+		}
+		if msg.DataLength > 0 {
+			return string(msg.Data), nil
+		}
+	}
+	return "", ErrPing
 }
 
 // NewConn ...
@@ -301,6 +319,9 @@ func (c *connImpl) doRecv(msg *Message) {
 		panic("unsupported request type")
 		//return
 	}
+}
+func recvRequestPing(src *Message, v interface{}) (msg *Message, b bool, err error) {
+	return newSendMessage(src.MessageID, []byte("pong")), true, nil
 }
 
 func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, b bool, err error) {
