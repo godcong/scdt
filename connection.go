@@ -30,10 +30,14 @@ type connImpl struct {
 	recvStore              *sync.Map
 	sendQueue              chan *Queue
 	closed                 *atomic.Bool
+	onRecvCallback         OnRecvCallbackFunc
 }
 
 // RecvCallbackFunc ...
 type RecvCallbackFunc func(message *Message) ([]byte, bool, error)
+
+// OnRecvCallbackFunc ...
+type OnRecvCallbackFunc func(src *Message, target *Message) (bool, error)
 
 // ErrPing ...
 var ErrPing = errors.New("ping remote address failed")
@@ -276,6 +280,11 @@ func (c *connImpl) Recv(fn RecvCallbackFunc) {
 	c.recvCallback = fn
 }
 
+// OnRecv ...
+func (c *connImpl) OnRecv(fn OnRecvCallbackFunc) {
+	c.onRecvCallback = fn
+}
+
 // send ...
 func (c *connImpl) RecvCustomData(fn RecvCallbackFunc) {
 	c.recvCustomDataCallback = fn
@@ -392,6 +401,15 @@ func (c *connImpl) recvRequest(msg *Message) {
 		newMsg, b, _ = recvRequestFailed(msg, "no case matched")
 	}
 	log.Debugw("received", "msg", newMsg, "result", b, "err", err)
+	newMsg.MessageID = msg.MessageID
+	newMsg.Session = msg.Session
+	newMsg.CustomID = msg.CustomID
+	if newMsg.DataLength != 0 {
+		log.Debugw("received data", "type", newMsg.RequestType(), "data", string(newMsg.Data))
+	}
+	if c.onRecvCallback != nil {
+		b, err = c.onRecvCallback(msg, newMsg)
+	}
 	if !b {
 		return
 	}
@@ -399,12 +417,6 @@ func (c *connImpl) recvRequest(msg *Message) {
 	if err != nil {
 		//ignore err, ignore result tag
 		newMsg, _, _ = recvRequestFailed(msg, err.Error())
-	}
-	newMsg.MessageID = msg.MessageID
-	newMsg.Session = msg.Session
-	newMsg.CustomID = msg.CustomID
-	if newMsg.DataLength != 0 {
-		log.Debugw("received data", "type", newMsg.RequestType(), "data", string(newMsg.Data))
 	}
 	DefaultQueue(newMsg).send(c.sendQueue)
 }

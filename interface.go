@@ -19,9 +19,11 @@ type Listener interface {
 type Connection interface {
 	LocalID() string
 	RemoteID() (string, error)
+	Ping() (string, error)
 	Close()
 	IsClosed() bool
 	Recv(fn RecvCallbackFunc)
+	OnRecv(fn OnRecvCallbackFunc)
 	RecvCustomData(fn RecvCallbackFunc)
 	SendCustomData(id CustomID, data []byte) (*Queue, bool)
 	SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool)
