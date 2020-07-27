@@ -55,7 +55,7 @@ func (q *Queue) trigger(message *Message) {
 	}
 	if q.callback != nil {
 		t := time.NewTimer(q.timeout)
-		defer t.Reset(0)
+		defer t.Stop()
 		select {
 		case <-t.C:
 		case q.callback <- message:
@@ -67,7 +67,7 @@ func (q *Queue) trigger(message *Message) {
 func (q *Queue) Wait() *Message {
 	if q.callback != nil {
 		t := time.NewTimer(q.timeout)
-		defer t.Reset(0)
+		defer t.Stop()
 		select {
 		case <-t.C:
 		case cb := <-q.callback:
@@ -94,7 +94,7 @@ func (q *Queue) send(out chan<- *Queue) bool {
 	}
 
 	t := time.NewTimer(q.timeout)
-	defer t.Reset(0)
+	defer t.Stop()
 	select {
 	case <-t.C:
 		return false
