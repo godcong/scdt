@@ -42,6 +42,7 @@ type OnRecvCallbackFunc func(src *Message, target *Message) (bool, error)
 // ErrPing ...
 var ErrPing = errors.New("ping remote address failed")
 var defaultConnSendTimeout = 30 * time.Second
+
 var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, b bool, err error){
 	MessagePing:      recvRequestPing,
 	MessageHeartBeat: recvRequestHearBeat,
@@ -65,8 +66,6 @@ func (c *connImpl) LocalID() string {
 func (c *connImpl) RemoteID() (id string, err error) {
 	id = c.remoteID.Load()
 	if id == "" {
-		//msg := newRecvMessage(MessageConnectID)
-		//msg.SetDataString("hello world")
 		queue := CallbackQueue(newRecvMessage(MessageConnectID))
 		if queue.send(c.sendQueue) {
 			msg := queue.Wait()
@@ -100,22 +99,17 @@ func (c *connImpl) Ping() (string, error) {
 }
 
 // NewConn ...
-func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
+func NewConn(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
 	cfg := defaultConfig()
 	for _, cf := range cfs {
 		cf(cfg)
-	}
-
-	ider := UUID
-	if cfg.CustomIDer != nil {
-		ider = cfg.CustomIDer
 	}
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	impl := &connImpl{
 		ctx:           ctx,
 		cancel:        cancel,
-		localID:       ider(),
+		localID:       id,
 		cfg:           cfg,
 		conn:          conn,
 		hbCheck:       time.NewTimer(cfg.Timeout),
@@ -130,17 +124,17 @@ func NewConn(conn net.Conn, cfs ...ConfigFunc) Connection {
 }
 
 // Accept ...
-func Accept(conn net.Conn, cfs ...ConfigFunc) Connection {
-	return NewConn(conn, cfs...)
+func Accept(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
+	return NewConn(id, conn, cfs...)
 }
 
 // Connect ...
-func Connect(conn net.Conn, cfs ...ConfigFunc) Connection {
+func Connect(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
 	tmp := []ConfigFunc{func(c *Config) {
-		c.Timeout = 30 * time.Second
+		c.Timeout = defaultConnSendTimeout
 	}}
 	tmp = append(tmp, cfs...)
-	return NewConn(conn, tmp...)
+	return NewConn(id, conn, tmp...)
 }
 
 func (c *connImpl) sendMessage(pack WritePacker) error {

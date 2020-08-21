@@ -21,7 +21,6 @@ type listener struct {
 	listener net.Listener
 	cfg      *Config
 	id       string
-	ider     CustomIDerFunc
 	pool     *ants.Pool
 	gcTicker *time.Ticker
 	conns    *sync.Map
@@ -39,15 +38,10 @@ func (l *listener) Stop() error {
 	return nil
 }
 
-// SetGlobalID ...
-func (l *listener) SetGlobalID(f func() string) {
-	l.ider = f
-}
-
 func (l *listener) getConn(id string) (Connection, error) {
 	load, ok := l.conns.Load(id)
 	if !ok {
-		return nil, errors.New("connection id was unsupported")
+		return nil, errors.New("connection was not found")
 	}
 	connection, b := load.(Connection)
 	if b {
@@ -57,7 +51,7 @@ func (l *listener) getConn(id string) (Connection, error) {
 }
 
 // RangeConnections ...
-func (l *listener) RangeConnections(f func(id string, connection Connection)) {
+func (l *listener) Range(f func(id string, connection Connection)) {
 	l.conns.Range(func(key, value interface{}) bool {
 		connection, valueB := value.(Connection)
 		id, keyB := key.(string)
@@ -131,19 +125,7 @@ func (l *listener) listen() {
 			continue
 		}
 		l.pool.Submit(func() {
-			c := Accept(conn, func(c *Config) {
-				if l.ider != nil {
-					c.CustomIDer = l.ider
-					return
-				}
-				if l.id != "" {
-					c.CustomIDer = func() string {
-						return l.id
-					}
-					return
-				}
-				c.CustomIDer = UUID
-			})
+			c := Accept(l.id, conn)
 			id, err := c.RemoteID()
 			if err != nil {
 				return
@@ -180,7 +162,7 @@ func (l *listener) listen() {
 }
 
 // NewListener ...
-func NewListener(addr string, cfs ...ConfigFunc) (Listener, error) {
+func NewListener(id, addr string, cfs ...ConfigFunc) (Listener, error) {
 	l, err := reuse.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
@@ -199,13 +181,11 @@ func NewListener(addr string, cfs ...ConfigFunc) (Listener, error) {
 		ctx:      ctx,
 		cancel:   cancel,
 		cfg:      cfg,
+		id:       id,
 		listener: l,
 		pool:     pool,
 		conns:    new(sync.Map),
 		gcTicker: defaultGCTimer,
-	}
-	if lis.cfg.CustomIDer != nil {
-		lis.id = lis.cfg.CustomIDer()
 	}
 
 	go lis.gc()

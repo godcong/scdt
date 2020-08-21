@@ -8,11 +8,10 @@ type MessageCallbackFunc func(data []byte)
 // Listener ...
 type Listener interface {
 	Stop() error
-	SetGlobalID(f func() string)
 	HandleRecv(fn HandleRecvFunc)
 	SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) (*Queue, bool)
 	SendTo(id string, data []byte, f func(id string, message *Message)) (*Queue, bool)
-	RangeConnections(f func(id string, connection Connection))
+	Range(f func(id string, connection Connection))
 }
 
 // Connection ...
