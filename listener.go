@@ -70,6 +70,7 @@ func (l *listener) Listen(network string, lis net.Listener) (b bool) {
 		l.listeners[network] = lis
 	}
 	l.listenerLock.Unlock()
+	go l.listen(lis)
 	return !b
 }
 
