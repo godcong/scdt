@@ -102,11 +102,11 @@ func (c *connImpl) Ping() (string, error) {
 	return "", ErrPing
 }
 
-// NewConn ...
-func NewConn(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
+// NewConnection ...
+func NewConnection(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
 	cfg := defaultConfig()
-	for _, cf := range cfs {
-		cf(cfg)
+	for _, cfgf := range cfs {
+		cfgf(cfg)
 	}
 
 	ctx, cancel := context.WithCancel(context.TODO())
@@ -114,21 +114,21 @@ func NewConn(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
 		ctx:           ctx,
 		cancel:        cancel,
 		localID:       id,
+		remoteID:      atomic.NewString(""),
 		cfg:           cfg,
 		conn:          conn,
 		hbCheck:       time.NewTimer(cfg.Timeout),
 		session:       atomic.NewUint32(1),
-		callbackStore: new(sync.Map),
-		remoteID:      atomic.NewString(""),
 		sendQueue:     make(chan *Queue),
 		closed:        atomic.NewBool(false),
+		callbackStore: new(sync.Map),
 	}
 	return runConnection(impl)
 }
 
 // Accept ...
 func Accept(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
-	return NewConn(id, conn, cfs...)
+	return NewConnection(id, conn, cfs...)
 }
 
 // Connect ...
@@ -137,7 +137,7 @@ func Connect(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
 		c.Timeout = defaultConnSendTimeout
 	}}
 	tmp = append(tmp, cfs...)
-	return NewConn(id, conn, tmp...)
+	return NewConnection(id, conn, tmp...)
 }
 
 func (c *connImpl) sendMessage(pack WritePacker) error {
