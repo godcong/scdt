@@ -46,7 +46,7 @@ var defaultConnSendTimeout = 30 * time.Second
 var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message, b bool, err error){
 	MessagePing:      recvRequestPing,
 	MessageHeartBeat: recvRequestHearBeat,
-	MessageConnectID: recvRequestID,
+	MessageIDRequest: recvRequestID,
 }
 
 // IsClosed ...
@@ -66,7 +66,7 @@ func (c *connImpl) LocalID() string {
 func (c *connImpl) RemoteID() (id string, err error) {
 	id = c.remoteID.Load()
 	if id == "" {
-		queue := CallbackQueue(newRecvMessage(MessageConnectID))
+		queue := CallbackQueue(newReqMessage(MessageIDRequest))
 		if queue.send(c.sendQueue) {
 			msg := queue.Wait()
 			log.Debugw("result msg", "msg", msg)
@@ -85,10 +85,10 @@ func (c *connImpl) RemoteID() (id string, err error) {
 
 // Ping ...
 func (c *connImpl) Ping() (string, error) {
-	queue := CallbackQueue(newRecvMessage(MessagePing))
+	queue := CallbackQueue(newReqMessage(MessagePing))
 	if b := queue.send(c.sendQueue); b {
 		msg := queue.Wait()
-		if msg.RequestType() == RequestTypeFailed && msg.DataLength > 0 {
+		if msg.RequestType() == TypeFailed && msg.DataLength > 0 {
 			return "", errors.New(string(msg.Data))
 		}
 		if msg.DataLength > 0 {
@@ -181,7 +181,7 @@ func (c *connImpl) send() {
 			if c.cfg.Timeout == 0 {
 				continue
 			}
-			err := c.sendMessage(newRecvMessage(MessageHeartBeat))
+			err := c.sendMessage(newReqMessage(MessageHeartBeat))
 			if err != nil {
 				panic(err)
 			}
@@ -227,7 +227,7 @@ func (c *connImpl) addCallback(queue *Queue) {
 
 // SendOnWait ...
 func (c *connImpl) SendCustomDataOnWait(id CustomID, data []byte) (msg *Message, b bool) {
-	queue := CallbackQueue(newCustomRecvMessage(id, data))
+	queue := CallbackQueue(newCustomReqMessage(id, data))
 	if b = queue.send(c.sendQueue); b {
 		msg = queue.Wait()
 		b = msg != nil
@@ -242,7 +242,7 @@ func (c *connImpl) SendCustomData(id CustomID, data []byte) (*Queue, bool) {
 
 // send ...
 func (c *connImpl) SendCustomDataWithCallback(id CustomID, data []byte, cb func(message *Message)) (*Queue, bool) {
-	queue := CallbackQueue(newCustomRecvMessage(id, data)).SetRecvCallback(cb)
+	queue := CallbackQueue(newCustomReqMessage(id, data)).SetRecvCallback(cb)
 	b := queue.send(c.sendQueue)
 	return queue, b
 }
@@ -254,7 +254,7 @@ func (c *connImpl) Send(data []byte) (*Queue, bool) {
 
 // SendOnWait ...
 func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
-	queue := CallbackQueue(newRecvMessage(MessageDataTransfer).SetData(data))
+	queue := CallbackQueue(newReqMessage(MessageDataTransfer).SetData(data))
 	if b = queue.send(c.sendQueue); b {
 		msg = queue.Wait()
 		b = msg != nil
@@ -264,7 +264,7 @@ func (c *connImpl) SendOnWait(data []byte) (msg *Message, b bool) {
 
 // send ...
 func (c *connImpl) SendWithCallback(data []byte, cb func(message *Message)) (*Queue, bool) {
-	queue := CallbackQueue(newRecvMessage(MessageDataTransfer).SetData(data)).SetRecvCallback(cb)
+	queue := CallbackQueue(newReqMessage(MessageDataTransfer).SetData(data)).SetRecvCallback(cb)
 	b := queue.send(c.sendQueue)
 	return queue, b
 }
@@ -310,13 +310,13 @@ func (c *connImpl) Close() {
 
 func (c *connImpl) doRecv(msg *Message) {
 	switch msg.requestType {
-	case RequestTypeRecv:
+	case TypeRequest:
 		c.recvRequest(msg)
-	case RequestTypeSend:
+	case TypeResponse:
 		c.recvResponse(msg)
-	case RequestTypeFailed:
+	case TypeFailed:
 		c.recvFailed(msg)
-	case RequestTypeClose:
+	case TypeClose:
 		c.recvClose(msg)
 	default:
 		panic("unsupported request type")
@@ -324,12 +324,12 @@ func (c *connImpl) doRecv(msg *Message) {
 	}
 }
 func recvRequestPing(src *Message, v interface{}) (msg *Message, b bool, err error) {
-	return newSendMessage(src.MessageID, []byte("pong")), true, nil
+	return newRespMessage(src.MessageID, []byte("pong")), true, nil
 }
 
 func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, b bool, err error) {
 	if v == nil {
-		return newSendMessage(src.MessageID, nil), true, nil
+		return newRespMessage(src.MessageID, nil), true, nil
 	}
 
 	var msgCopy Message
@@ -343,11 +343,11 @@ func recvRequestDataTransfer(src *Message, v RecvCallbackFunc) (msg *Message, b 
 	if err != nil {
 		return &Message{}, true, err
 	}
-	return newSendMessage(src.MessageID, data), true, nil
+	return newRespMessage(src.MessageID, data), true, nil
 }
 func recvCustomRequest(src *Message, v RecvCallbackFunc) (msg *Message, b bool, err error) {
 	if v == nil {
-		return newCustomSendMessage(src.CustomID, nil), true, nil
+		return newCustomRespMessage(src.CustomID, nil), true, nil
 	}
 	var msgCopy Message
 	msgCopy = *src
@@ -360,22 +360,22 @@ func recvCustomRequest(src *Message, v RecvCallbackFunc) (msg *Message, b bool, 
 	if err != nil {
 		return &Message{}, true, err
 	}
-	return newCustomSendMessage(src.CustomID, data), true, nil
+	return newCustomRespMessage(src.CustomID, data), true, nil
 }
 func recvRequestFailed(src *Message, v interface{}) (msg *Message, b bool, err error) {
 	return newFailedSendMessage(toBytes(v.(string))), true, nil
 }
 func recvRequestHearBeat(src *Message, v interface{}) (msg *Message, b bool, err error) {
-	return newSendMessage(src.MessageID, nil), true, nil
+	return newRespMessage(src.MessageID, nil), true, nil
 }
 func recvRequestID(src *Message, v interface{}) (msg *Message, b bool, err error) {
 	id := v.(string)
-	return newSendMessage(src.MessageID, toBytes(id)), true, nil
+	return newRespMessage(src.MessageID, toBytes(id)), true, nil
 }
 
 func (c *connImpl) getMessageArgs(id MessageID) interface{} {
 	switch id {
-	case MessageConnectID:
+	case MessageIDRequest:
 		return c.localID
 	}
 	return nil
@@ -399,7 +399,7 @@ func (c *connImpl) recvRequest(msg *Message) {
 	newMsg.Session = msg.Session
 	newMsg.CustomID = msg.CustomID
 	if newMsg.DataLength != 0 {
-		log.Debugw("received data", "type", newMsg.RequestType(), "data", string(newMsg.Data))
+		log.Debugw("data received", "type", newMsg.RequestType(), "data", string(newMsg.Data))
 	}
 	if c.onRecvCallback != nil {
 		b, err = c.onRecvCallback(msg, newMsg)
@@ -431,11 +431,11 @@ func (c *connImpl) getCallback(session Session) (f func(message *Message), b boo
 	if session == 0 {
 		return
 	}
-	log.Debugw("load callback", "session", session)
+	log.Debugw("load msgWaiter", "session", session)
 	load, ok := c.callbackStore.Load(session)
 	if ok {
 		f, b = load.(func(message *Message))
-		log.Debugw("callback", "has", b)
+		log.Debugw("msgWaiter", "has", b)
 		c.callbackStore.Delete(session)
 	}
 	return

@@ -6,8 +6,8 @@ import (
 	"io"
 )
 
-// RequestType ...
-type RequestType uint8
+// Type ...
+type Type uint8
 
 // MessageID ...
 type MessageID uint8
@@ -32,14 +32,14 @@ type Extension uint16
 
 // Version //4
 const (
-	// RequestTypeRecv ...
-	RequestTypeRecv RequestType = iota + 1
-	// RequestTypeSend ...
-	RequestTypeSend
-	// RequestTypeFailed ...
-	RequestTypeFailed
-	// RequestTypeClose ...
-	RequestTypeClose
+	// TypeRequest ...
+	TypeRequest Type = iota + 1
+	// TypeResponse ...
+	TypeResponse
+	// TypeFailed ...
+	TypeFailed
+	// TypeClose ...
+	TypeClose
 )
 
 const (
@@ -47,8 +47,8 @@ const (
 	MessagePing MessageID = iota + 1
 	// MessageHeartBeat ...
 	MessageHeartBeat
-	// MessageConnectID ...
-	MessageConnectID
+	// MessageIDRequest ...
+	MessageIDRequest
 	// MessageDataTransfer ...
 	MessageDataTransfer
 	// MessageUserCustom ...
@@ -62,7 +62,7 @@ const (
 // Message ...
 type Message struct {
 	version     Version
-	requestType RequestType
+	requestType Type
 	MessageID   MessageID
 	CustomID    CustomID
 	DataLength  DataLength
@@ -70,41 +70,41 @@ type Message struct {
 	Data        []byte
 }
 
-// newSendMessage ...
-func newSendMessage(id MessageID, data []byte) *Message {
+// newRespMessage ...
+func newRespMessage(id MessageID, data []byte) *Message {
 	return &Message{
-		version:     Version{'v', 0, 0, 1},
-		requestType: RequestTypeSend,
+		version:     DefaultVersion,
+		requestType: TypeResponse,
 		MessageID:   id,
 		DataLength:  Length(data),
 		Data:        data,
 	}
 }
 
-// newRecvMessage ...
-func newRecvMessage(id MessageID) *Message {
+// newReqMessage ...
+func newReqMessage(id MessageID) *Message {
 	return &Message{
-		version:     Version{'v', 0, 0, 1},
-		requestType: RequestTypeRecv,
+		version:     DefaultVersion,
+		requestType: TypeRequest,
 		MessageID:   id,
 	}
 }
 
 func newCloseMessage(id MessageID, msg []byte) *Message {
 	return &Message{
-		version:     Version{'v', 0, 0, 1},
-		requestType: RequestTypeClose,
+		version:     DefaultVersion,
+		requestType: TypeClose,
 		MessageID:   id,
 		DataLength:  Length(msg),
 		Data:        msg,
 	}
 }
 
-// newCustomSendMessage ...
-func newCustomSendMessage(id CustomID, data []byte) *Message {
+// newCustomRespMessage ...
+func newCustomRespMessage(id CustomID, data []byte) *Message {
 	return &Message{
-		version:     Version{'v', 0, 0, 1},
-		requestType: RequestTypeSend,
+		version:     DefaultVersion,
+		requestType: TypeResponse,
 		MessageID:   MessageUserCustom,
 		CustomID:    id,
 		Data:        data,
@@ -112,11 +112,11 @@ func newCustomSendMessage(id CustomID, data []byte) *Message {
 	}
 }
 
-// newCustomRecvMessage ...
-func newCustomRecvMessage(id CustomID, data []byte) *Message {
+// newCustomReqMessage ...
+func newCustomReqMessage(id CustomID, data []byte) *Message {
 	return &Message{
-		version:     Version{'v', 0, 0, 1},
-		requestType: RequestTypeRecv,
+		version:     DefaultVersion,
+		requestType: TypeRequest,
 		MessageID:   MessageUserCustom,
 		CustomID:    id,
 		Data:        data,
@@ -126,8 +126,8 @@ func newCustomRecvMessage(id CustomID, data []byte) *Message {
 
 func newFailedSendMessage(data []byte) *Message {
 	return &Message{
-		version:     Version{'v', 0, 0, 1},
-		requestType: RequestTypeFailed,
+		version:     DefaultVersion,
+		requestType: TypeFailed,
 		MessageID:   MessageRecvFailed,
 		Data:        data,
 		DataLength:  Length(data),
@@ -188,19 +188,19 @@ func (m *Message) SetData(data []byte) *Message {
 }
 
 // RequestType ...
-func (m *Message) RequestType() RequestType {
+func (m *Message) RequestType() Type {
 	return m.requestType
 }
 
 // SetRequestType ...
-func (m *Message) SetRequestType(requestType RequestType) *Message {
+func (m *Message) SetRequestType(requestType Type) *Message {
 	m.requestType = requestType
 	return m
 }
 
 // Error ...
 func (m *Message) Error() error {
-	if m.requestType != RequestTypeFailed {
+	if m.requestType != TypeFailed {
 		return nil
 	}
 	return errors.New(string(m.Data))

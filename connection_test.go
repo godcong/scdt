@@ -19,7 +19,7 @@ func TestListener_Stop(t *testing.T) {
 		}
 	})
 	lis.HandleRecv(func(id string, message *Message) ([]byte, bool) {
-		log.Infow("receive callback", "id", id, "message", message)
+		log.Infow("receive msgWaiter", "id", id, "message", message)
 		return []byte("the world give you a data"), true
 	})
 	lis.SetGlobalID(func() string {
@@ -58,13 +58,13 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 				t.Fatal(err)
 			}
 			fmt.Println("local id", connect.LocalID(), "remote id", id)
-			_, b := connect.SendCustomDataWithCallback(0x01, []byte("hello send with callback"), func(message *Message) {
+			_, b := connect.SendCustomDataWithCallback(0x01, []byte("hello send with msgWaiter"), func(message *Message) {
 				fmt.Printf("send message:%+v,data:%s\n", message, message.Data)
 			})
 			//if b {
-			//	wait := callback.Wait()
+			//	wait := msgWaiter.Wait()
 			//	if wait != nil {
-			//		fmt.Printf("waited send message callback:%+v,data:%s\n", wait, wait.Data)
+			//		fmt.Printf("waited send message msgWaiter:%+v,data:%s\n", wait, wait.Data)
 			//	}
 			//}
 			msg, b := connect.SendCustomDataOnWait(0x02, []byte("hello send on wait"))
@@ -85,8 +85,8 @@ func TestConnImpl_MessageCallback(t *testing.T) {
 func TestConnImpl_LocalID(t *testing.T) {
 	// MessageHeartBeat ...
 	t.Log(MessageHeartBeat)
-	// MessageConnectID ...
-	t.Log(MessageConnectID)
+	// MessageIDRequest ...
+	t.Log(MessageIDRequest)
 	// MessageDataTransfer ...
 	t.Log(MessageDataTransfer)
 	// MessageUserCustom ...

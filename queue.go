@@ -12,7 +12,7 @@ type Queue struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	message      *Message
-	callback     chan *Message
+	msgWaiter    chan *Message
 	timeout      time.Duration
 	session      *Session //link msg.session => session
 	sendCallback func(msg *Message)
@@ -45,7 +45,7 @@ func (q *Queue) setSession(session Session) {
 
 // NeedCallback ...
 func (q *Queue) NeedCallback() bool {
-	return q.callback != nil
+	return q.msgWaiter != nil
 }
 
 // trigger ...
@@ -53,24 +53,24 @@ func (q *Queue) trigger(message *Message) {
 	if q.recvCallback != nil {
 		q.recvCallback(message)
 	}
-	if q.callback != nil {
+	if q.msgWaiter != nil {
 		t := time.NewTimer(q.timeout)
 		defer t.Stop()
 		select {
 		case <-t.C:
-		case q.callback <- message:
+		case q.msgWaiter <- message:
 		}
 	}
 }
 
 // Wait ...
 func (q *Queue) Wait() *Message {
-	if q.callback != nil {
+	if q.msgWaiter != nil {
 		t := time.NewTimer(q.timeout)
 		defer t.Stop()
 		select {
 		case <-t.C:
-		case cb := <-q.callback:
+		case cb := <-q.msgWaiter:
 			return cb
 		}
 	}
@@ -120,7 +120,7 @@ func DefaultQueue(msg *Message) *Queue {
 // CallbackQueue ...
 func CallbackQueue(msg *Message) *Queue {
 	return &Queue{
-		callback:     make(chan *Message),
+		msgWaiter:    make(chan *Message),
 		sendCallback: nil,
 		timeout:      defaultQueueTimeout,
 		session:      &msg.Session,

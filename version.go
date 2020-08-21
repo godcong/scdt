@@ -10,6 +10,9 @@ import (
 // Version ...
 type Version [4]byte
 
+// DefaultVersion ...
+var DefaultVersion Version = [4]byte{'v', 0, 0, 1}
+
 // String ...
 func (v Version) String() string {
 	return fmt.Sprintf("%s%d.%d.%d", string(v[0]), v[1], v[2], v[3])
