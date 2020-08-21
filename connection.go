@@ -15,19 +15,18 @@ import (
 )
 
 type connImpl struct {
-	ctx                    context.Context
-	cancel                 context.CancelFunc
-	fn                     MessageCallbackFunc
+	ctx    context.Context
+	cancel context.CancelFunc
+	conn   net.Conn
+
 	cfg                    *Config
 	localID                string
+	remoteID               *atomic.String
 	recvCallback           RecvCallbackFunc
 	recvCustomDataCallback RecvCallbackFunc
-	remoteID               *atomic.String
-	conn                   net.Conn
 	hbCheck                *time.Timer
 	session                *atomic.Uint32
 	callbackStore          *sync.Map
-	recvStore              *sync.Map
 	sendQueue              chan *Queue
 	closed                 *atomic.Bool
 	onRecvCallback         OnRecvCallbackFunc
@@ -120,7 +119,6 @@ func NewConn(id string, conn net.Conn, cfs ...ConfigFunc) Connection {
 		hbCheck:       time.NewTimer(cfg.Timeout),
 		session:       atomic.NewUint32(1),
 		callbackStore: new(sync.Map),
-		recvStore:     new(sync.Map),
 		remoteID:      atomic.NewString(""),
 		sendQueue:     make(chan *Queue),
 		closed:        atomic.NewBool(false),
@@ -228,6 +226,11 @@ func (c *connImpl) addCallback(queue *Queue) {
 	s := c.newSession()
 	queue.setSession(s)
 	c.callbackStore.Store(s, queue.trigger)
+}
+
+// SendQueue ...
+func (c *connImpl) SendQueue(q *Queue) bool {
+	return q.send(c.sendQueue)
 }
 
 // SendOnWait ...

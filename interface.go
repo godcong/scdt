@@ -25,6 +25,7 @@ type Connection interface {
 	Close()
 	IsClosed() bool
 	NetConn() net.Conn
+	SendQueue(q *Queue) bool
 	Recv(fn RecvCallbackFunc)
 	OnRecv(fn OnRecvCallbackFunc)
 	RecvCustomData(fn RecvCallbackFunc)
