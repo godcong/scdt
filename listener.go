@@ -2,24 +2,24 @@ package scdt
 
 import (
 	"context"
-	"errors"
 	"net"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/panjf2000/ants/v2"
-	"github.com/portmapping/go-reuse"
 )
 
 // HandleRecvFunc ...
 type HandleRecvFunc func(id string, message *Message) ([]byte, bool)
 
 type listener struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	listener net.Listener
-	cfg      *Config
+	ctx           context.Context
+	cancel        context.CancelFunc
+	listeners     map[string]net.Listener
+	listenerLock  *sync.RWMutex
+	onceListening *sync.Once
+
 	id       string
 	pool     *ants.Pool
 	gcTicker *time.Ticker
@@ -38,16 +38,17 @@ func (l *listener) Stop() error {
 	return nil
 }
 
-func (l *listener) getConn(id string) (Connection, error) {
+// Conn ...
+func (l *listener) Conn(id string) (Connection, bool) {
 	load, ok := l.conns.Load(id)
 	if !ok {
-		return nil, errors.New("connection was not found")
+		return nil, ok
 	}
 	connection, b := load.(Connection)
-	if b {
-		return nil, errors.New("failed transfer to Connection")
+	if !b {
+		return nil, b
 	}
-	return connection, nil
+	return connection, true
 }
 
 // RangeConnections ...
@@ -62,10 +63,20 @@ func (l *listener) Range(f func(id string, connection Connection)) {
 	})
 }
 
+// Listen ...
+func (l *listener) Listen(network string, lis net.Listener) (b bool) {
+	l.listenerLock.Lock()
+	if _, b = l.listeners[network]; !b {
+		l.listeners[network] = lis
+	}
+	l.listenerLock.Unlock()
+	return !b
+}
+
 // SendTo ...
 func (l *listener) SendCustomTo(id string, cid CustomID, data []byte, f func(id string, message *Message)) (*Queue, bool) {
-	conn, err := l.getConn(id)
-	if err != nil {
+	conn, b := l.Conn(id)
+	if !b {
 		return nil, false
 	}
 	return conn.SendCustomDataWithCallback(cid, data, func(message *Message) {
@@ -77,8 +88,8 @@ func (l *listener) SendCustomTo(id string, cid CustomID, data []byte, f func(id 
 
 // SendTo ...
 func (l *listener) SendTo(id string, data []byte, f func(id string, message *Message)) (*Queue, bool) {
-	conn, err := l.getConn(id)
-	if err != nil {
+	conn, b := l.Conn(id)
+	if !b {
 		return nil, false
 	}
 	return conn.SendWithCallback(data, func(message *Message) {
@@ -110,7 +121,7 @@ func (l *listener) gc() {
 
 func (l *listener) handleRecv(id string) func(message *Message) ([]byte, bool) {
 	return func(message *Message) ([]byte, bool) {
-		log.Debugw("recvFunc", "id", id, "message", message, "funcNull", l.recvFunc == nil)
+		log.Debugw("recvFunc", "id", id, "message", message, "funcIsNull", l.recvFunc == nil)
 		if l.recvFunc != nil {
 			return l.recvFunc(id, message)
 		}
@@ -118,9 +129,19 @@ func (l *listener) handleRecv(id string) func(message *Message) ([]byte, bool) {
 	}
 }
 
-func (l *listener) listen() {
+func (l *listener) startListen() {
+	l.onceListening.Do(func() {
+		l.listenerLock.RLock()
+		for i := range l.listeners {
+			go l.listen(l.listeners[i])
+		}
+		l.listenerLock.RUnlock()
+	})
+}
+
+func (l *listener) listen(lis net.Listener) {
 	for {
-		conn, err := l.listener.Accept()
+		conn, err := lis.Accept()
 		if err != nil {
 			continue
 		}
@@ -162,11 +183,7 @@ func (l *listener) listen() {
 }
 
 // NewListener ...
-func NewListener(id, addr string, cfs ...ConfigFunc) (Listener, error) {
-	l, err := reuse.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
+func NewListener(id string, cfs ...ConfigFunc) (Listener, error) {
 
 	pool, poolErr := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithNonblocking(false))
 	if poolErr != nil {
@@ -178,18 +195,19 @@ func NewListener(id, addr string, cfs ...ConfigFunc) (Listener, error) {
 		cf(cfg)
 	}
 	lis := &listener{
-		ctx:      ctx,
-		cancel:   cancel,
-		cfg:      cfg,
-		id:       id,
-		listener: l,
-		pool:     pool,
-		conns:    new(sync.Map),
-		gcTicker: defaultGCTimer,
-	}
+		ctx:    ctx,
+		cancel: cancel,
 
+		id:            id,
+		listeners:     make(map[string]net.Listener),
+		listenerLock:  &sync.RWMutex{},
+		onceListening: &sync.Once{},
+		pool:          pool,
+		conns:         new(sync.Map),
+		gcTicker:      defaultGCTimer,
+	}
+	lis.startListen()
 	go lis.gc()
-	go lis.listen()
 	return lis, nil
 
 }

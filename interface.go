@@ -1,6 +1,9 @@
 package scdt
 
-import "io"
+import (
+	"io"
+	"net"
+)
 
 // MessageCallbackFunc ...
 type MessageCallbackFunc func(data []byte)
@@ -21,6 +24,7 @@ type Connection interface {
 	Ping() (string, error)
 	Close()
 	IsClosed() bool
+	NetConn() net.Conn
 	Recv(fn RecvCallbackFunc)
 	OnRecv(fn OnRecvCallbackFunc)
 	RecvCustomData(fn RecvCallbackFunc)

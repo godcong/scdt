@@ -49,6 +49,11 @@ var recvReqFunc = map[MessageID]func(src *Message, v interface{}) (msg *Message,
 	MessageIDRequest: recvRequestID,
 }
 
+// NetConn ...
+func (c *connImpl) NetConn() net.Conn {
+	return c.conn
+}
+
 // IsClosed ...
 func (c *connImpl) IsClosed() bool {
 	if c.closed != nil {
@@ -65,22 +70,22 @@ func (c *connImpl) LocalID() string {
 // RemoteID ...
 func (c *connImpl) RemoteID() (id string, err error) {
 	id = c.remoteID.Load()
-	if id == "" {
-		queue := CallbackQueue(newReqMessage(MessageIDRequest))
-		if queue.send(c.sendQueue) {
-			msg := queue.Wait()
-			log.Debugw("result msg", "msg", msg)
-			if msg != nil && msg.DataLength != 0 {
-				log.Debugw("debug data detail", "data", string(msg.Data))
-				id = string(msg.Data)
-				c.remoteID.Store(id)
-				return
-			}
-			return "", errors.New("get response message failed")
-		}
-		return "", errors.New("send id request failed")
+	if id != "" {
+		return id, nil
 	}
-	return id, nil
+	queue := CallbackQueue(newReqMessage(MessageIDRequest))
+	if queue.send(c.sendQueue) {
+		msg := queue.Wait()
+		log.Debugw("result msg", "msg", msg)
+		if msg != nil && msg.DataLength != 0 {
+			log.Debugw("debug data detail", "data", string(msg.Data))
+			id = string(msg.Data)
+			c.remoteID.Store(id)
+			return
+		}
+		return "", errors.New("get response message failed")
+	}
+	return "", errors.New("send id request failed")
 }
 
 // Ping ...
